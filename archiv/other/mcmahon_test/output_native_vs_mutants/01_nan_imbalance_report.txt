@@ -1,0 +1,18 @@
+[A,C]  Binders: 3 (8.6%)  Non-binders: 32 (91.4%)  Ratio: 0.094
+  → HIGHLY IMBALANCED: use PR-AUC & F1, not ROC-AUC alone
+[B,C]  Binders: 3 (8.6%)  Non-binders: 32 (91.4%)  Ratio: 0.094
+  → HIGHLY IMBALANCED: use PR-AUC & F1, not ROC-AUC alone
+[combined]  Binders: 6 (8.6%)  Non-binders: 64 (91.4%)  Ratio: 0.094
+  → HIGHLY IMBALANCED: use PR-AUC & F1, not ROC-AUC alone
+
+NaN counts:
+  cf_interface_dG: 70
+  cf_interface_dG_SASA_ratio: 70
+  chai_constrained_interface_iptm: 70
+  cf_pyros_binder_score: 70
+  af3_rank0_masif: 69
+  cf_rank0_masif: 68
+  esmfold_ipae: 68
+  esmfold_iplddt: 68
+  mut_chain: 12
+  mutation: 6
