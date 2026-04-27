@@ -1,0 +1,5 @@
+Nb.AQ100_Adiponectin
+Nb.AQ101_Adiponectin
+Nb.AQ102_Adiponectin
+Nb.AQ103_Adiponectin
+Nb.AQ104_Adiponectin

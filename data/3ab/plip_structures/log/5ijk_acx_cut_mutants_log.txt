@@ -1,0 +1,52 @@
+Mutation: 5ijk_acx_cut_A_I112A | VALID
+  WT Context:  PLVNH[I]TILDY
+  Mut Context: PLVNH[A]TILDY
+
+Mutation: 5ijk_acx_cut_A_T113A | VALID
+  WT Context:  LVNHI[T]ILDYW
+  Mut Context: LVNHI[A]ILDYW
+
+Mutation: 5ijk_acx_cut_A_I114A | VALID
+  WT Context:  VNHIT[I]LDYWG
+  Mut Context: VNHIT[A]LDYWG
+
+Mutation: 5ijk_acx_cut_A_R55A | VALID
+  WT Context:  LEWVG[R]IKTNT
+  Mut Context: LEWVG[A]IKTNT
+
+Mutation: 5ijk_acx_cut_A_K57A | VALID
+  WT Context:  WVGRI[K]TNTDG
+  Mut Context: WVGRI[A]TNTDG
+
+Mutation: 5ijk_acx_cut_B_Y107A | VALID
+  WT Context:  YYCQQ[Y]YRTPP
+  Mut Context: YYCQQ[A]YRTPP
+
+Mutation: 5ijk_acx_cut_B_Y108A | VALID
+  WT Context:  YCQQY[Y]RTPPL
+  Mut Context: YCQQY[A]RTPPL
+
+Mutation: 5ijk_acx_cut_B_T113A | VALID
+  WT Context:  QQYYR[T]PPLTF
+  Mut Context: QQYYR[A]PPLTF
+
+Mutation: 5ijk_acx_cut_B_Y31A | VALID
+  WT Context:  SQSVL[Y]SSNNK
+  Mut Context: SQSVL[A]SSNNK
+
+Mutation: 5ijk_acx_cut_B_K36A | VALID
+  WT Context:  YSSNN[K]NYLAW
+  Mut Context: YSSNN[A]NYLAW
+
+Mutation: 5ijk_acx_cut_B_Y38A | VALID
+  WT Context:  SNNKN[Y]LAWYQ
+  Mut Context: SNNKN[A]LAWYQ
+
+Mutation: 5ijk_acx_cut_B_W56A | VALID
+  WT Context:  KLLIY[W]ASTRE
+  Mut Context: KLLIY[A]ASTRE
+
+Mutation: 5ijk_acx_cut_all_A | FAILED (Found 12 diffs)
+
+RESULT: Verified 12/13 mutants.
+

@@ -1,0 +1,36 @@
+Mutation: 5ig7_abc_cut_A_K110A | VALID
+  WT Context:  AKFSG[K]DCSGT
+  Mut Context: AKFSG[A]DCSGT
+
+Mutation: 5ig7_abc_cut_A_W52A | VALID
+  WT Context:  GKGLE[W]VSGIS
+  Mut Context: GKGLE[A]VSGIS
+
+Mutation: 5ig7_abc_cut_A_Y66A | VALID
+  WT Context:  SGGST[Y]YADSV
+  Mut Context: SGGST[A]YADSV
+
+Mutation: 5ig7_abc_cut_B_W107A | VALID
+  WT Context:  YYCQT[W]GAGIL
+  Mut Context: YYCQT[A]GAGIL
+
+Mutation: 5ig7_abc_cut_B_G114A | VALID
+  WT Context:  QTWGA[G]ILVFG
+  Mut Context: QTWGA[A]ILVFG
+
+Mutation: 5ig7_abc_cut_B_L116A | VALID
+  WT Context:  WGAGI[L]VFGGG
+  Mut Context: WGAGI[A]VFGGG
+
+Mutation: 5ig7_abc_cut_B_Y37A | VALID
+  WT Context:  SGHSS[Y]VIAWH
+  Mut Context: SGHSS[A]VIAWH
+
+Mutation: 5ig7_abc_cut_B_V38A | VALID
+  WT Context:  GHSSY[V]IAWHQ
+  Mut Context: GHSSY[A]IAWHQ
+
+Mutation: 5ig7_abc_cut_all_A | FAILED (Found 8 diffs)
+
+RESULT: Verified 8/9 mutants.
+

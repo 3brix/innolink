@@ -1,0 +1,5 @@
+Nb.AQ100_Adiponectin	/scicore/home/schwede/barta0000/mcmahon_ds/adiponectin_trimers/Nb.AQ100_Adiponectin/boltz_free/output/boltz_results_Nb.AQ100_Adiponectin/predictions/Nb.AQ100_Adiponectin/Nb.AQ100_Adiponectin_model_0.cif
+Nb.AQ101_Adiponectin	/scicore/home/schwede/barta0000/mcmahon_ds/adiponectin_trimers/Nb.AQ101_Adiponectin/boltz_free/output/boltz_results_Nb.AQ101_Adiponectin/predictions/Nb.AQ101_Adiponectin/Nb.AQ101_Adiponectin_model_0.cif
+Nb.AQ102_Adiponectin	/scicore/home/schwede/barta0000/mcmahon_ds/adiponectin_trimers/Nb.AQ102_Adiponectin/boltz_free/output/boltz_results_Nb.AQ102_Adiponectin/predictions/Nb.AQ102_Adiponectin/Nb.AQ102_Adiponectin_model_0.cif
+Nb.AQ103_Adiponectin	/scicore/home/schwede/barta0000/mcmahon_ds/adiponectin_trimers/Nb.AQ103_Adiponectin/boltz_free/output/boltz_results_Nb.AQ103_Adiponectin/predictions/Nb.AQ103_Adiponectin/Nb.AQ103_Adiponectin_model_0.cif
+Nb.AQ104_Adiponectin	/scicore/home/schwede/barta0000/mcmahon_ds/adiponectin_trimers/Nb.AQ104_Adiponectin/boltz_free/output/boltz_results_Nb.AQ104_Adiponectin/predictions/Nb.AQ104_Adiponectin/Nb.AQ104_Adiponectin_model_0.cif
