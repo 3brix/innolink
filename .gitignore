@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.env/
+.venv/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+
+# specs
+archiv/
+EDA/static/
+data/3ab/table/master_table_snir.csv
+data/3ab/table/merged_snir.csv
+data/germinal/table/master_table_germinal.csv
+data/germinal/table/merged_germinal.csv
+data/germinal/table/merged_germinal_originals.csv
+data/mcmahon/table/master_table_mcmahon.csv
+data/mcmahon/table/merged_mcmahon.csv
+pymol/
