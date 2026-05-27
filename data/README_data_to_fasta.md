@@ -26,7 +26,7 @@ pip install pandas
 
 ### Basic Syntax
 ```bash
-python data_to_fasta.py <input_data_file> <target_file> [options]
+python3 data_to_fasta.py <input_data_file> <target_file> [options]
 ```
 
 ### Arguments

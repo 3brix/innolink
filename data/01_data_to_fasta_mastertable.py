@@ -14,7 +14,7 @@ def process_data(master_file):
         raise FileNotFoundError(f"Master file not found: {master_file}")
     
     # Read data
-    df = pd.read_csv(master_file, sep=';')
+    df = pd.read_csv(master_file)
     
     # Required columns
     required_cols = ['vhh', 'target', 'vhh_sequence', 'target_sequence']

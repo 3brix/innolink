@@ -23,7 +23,7 @@ def shuffle_targets(input_file, output_file=None, target_col='target', label_col
         raise FileNotFoundError(f"Input file not found: {input_file}")
     
     # Read data
-    df = pd.read_csv(input_file)
+    df = pd.read_csv(input_file, sep= ";")
     
     # Check if target column exists
     if target_col not in df.columns:
