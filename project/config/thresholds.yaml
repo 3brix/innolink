@@ -1,0 +1,54 @@
+# Per-FAMILY pass thresholds for the feasibility filter (analysis.profiles.plot_filter_heatmap).
+# Derived from EVERY family in metric_data.yaml so nothing is silently dropped.
+# - Applied to RAW merged.csv values (native units; plddt/iplddt are 0-1 post normalize_plddt).
+# - Direction (higher/lower better) is read from metric_data.yaml, NOT here.
+# - null = not decided -> family skipped (its metrics are dropped, reported back).
+# Comments show: dir, category, scale, member count.
+
+thresholds:
+  aggregate_score: 0.9   # dir [1], confidence, confidence, 2 members
+  confidence_score: 0.9   # dir [1], confidence, confidence, 2 members
+  delta_unsat_hbonds: 4   # dir [-1], developability, developability, 2 members
+  dsap: 0  # dir [-1], developability, developability, 2 members
+  esm3dg_dg: 1.5   # dir [-1], energy, energy, 8 members
+  esm3dg_dg_a: null   # dir [-1], energy, energy, 8 members
+  esm3dg_dg_b: null   # dir [-1], energy, energy, 8 members
+  esm3dg_dg_std: null   # dir [-1], energy, energy, 8 members
+  hydrophobic_sasa: null   # dir [1], developability, developability, 2 members
+  interface_dG: null   # dir [-1], energy, energy, 2 members
+  interface_dG_SASA_ratio: null   # dir [-1], energy, ratio, 2 members
+  interface_hbonds: 1   # dir [1], developability, developability, 2 members
+  interface_hydrophobicity: null   # dir [1], developability, developability, 2 members
+  interface_iptm: 0.7  # dir [1], interface, confidence, 2 members
+  interface_nres: 4   # dir [1], developability, developability, 2 members
+  interface_packstat: 0.5   # dir [1], developability, developability, 2 members
+  interface_sc: 0.6 # dir [1], developability, developability, 2 members
+  ipae: 10   # dir [-1], interface, error, 4 members
+  ipde: 10  # dir [-1], interface, error, 2 members
+  iplddt: 0.7   # dir [1], interface, confidence, 7 members
+  ipsae: 0.61   # dir [1], interface, confidence, 6 members
+  iptm: 0.7   # dir [1], interface, confidence, 7 members
+  lis: 0.23   # dir [1], interface, confidence, 6 members
+  mpnn_confidence: 0.45   # dir [1], sequence, confidence, 8 members
+  mpnn_nll: [2, 4]   # dir [-1], sequence, likelihood, 8 members
+  mpnn_nll_a: [2, 4]   # dir [-1], sequence, likelihood, 8 members
+  mpnn_nll_b: [2, 4]   # dir [-1], sequence, likelihood, 8 members
+  net_charge: [-4, 4]  # dir [1], developability, developability, 2 members  <-- window metric (two-sided); one-sided filter not meaningful, leave null
+  pae: 10   # dir [-1], confidence, error, 4 members
+  pde: 10   # dir [-1], confidence, error, 2 members
+  pdockq: 0.5   # dir [1], interface, confidence, 6 members
+  pdockq2: 0.5   # dir [1], interface, confidence, 6 members
+  per_chain_ab_iptm_mean: 0.7   # dir [1], interface, confidence, 2 members
+  per_chain_pair_iptm: 0.7  # dir [1], interface, confidence, 4 members
+  per_chain_ptm: 0.7   # dir [1], confidence, confidence, 2 members
+  per_chain_ptm_mean: 0.7   # dir [1], confidence, confidence, 2 members
+  plddt: 0.7   # dir [1], confidence, confidence, 7 members
+  ptm: 0.7   # dir [1], confidence, confidence, 8 members
+  pyros_binder_score: 0   # dir [-1], energy, energy, 2 members
+  rank: 0.9   # dir [-1], ranking, rank, 2 members
+  rank0_masif: 0.9   # dir [1], interface, confidence, 2 members
+  ranking_score: 0.9   # dir [1], confidence, confidence, 1 members
+  rmsd: 2.5   # dir [-1], geometry, distance, 1 members
+  sap: 0.4  # dir [-1], developability, developability, 6 members
+  score: 0.9   # dir [1], confidence, confidence, 2 members
+  surface_hydrophobicity: [0.25, 0.40]   # dir [1], developability, developability, 2 members
