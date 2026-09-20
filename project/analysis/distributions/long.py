@@ -6,9 +6,10 @@ Metric -> model grouping and the YAML-metadata enrichment that organizes the lon
 
 from __future__ import annotations
 
-import yaml
 import pandas as pd
 from config.analysis import MODELS
+from config.paths import METRIC_YAML
+from preprocessing.metric_meta import load_families, load_categories, load_scales
 
 
 def assign_model(metric: str, models: list[str] = MODELS) -> str | None:
@@ -31,16 +32,12 @@ def get_model_groups(metrics: list[str]) -> dict[str, list[str]]:
     return groups
 
 
-def load_metric_metadata(yaml_path) -> dict[str, dict]:
-    """
-    Load per-metric metadata (family / category / scale) from the metric YAML.
-    """
-    with open(yaml_path) as f:
-        data = yaml.safe_load(f)
-    return {
-        name: {"family": info.get("family"), "category": info.get("category"), "scale": info.get("scale")}
-        for name, info in data["metrics"].items()
-    }
+def load_metric_metadata(yaml_path=METRIC_YAML) -> dict[str, dict]:
+    """Per-metric metadata (family / category / scale), built from the central loaders
+    in preprocessing.metric_meta so there is a single YAML-reading implementation."""
+    fam, cat, scl = load_families(yaml_path), load_categories(yaml_path), load_scales(yaml_path)
+    return {name: {"family": fam.get(name), "category": cat.get(name), "scale": scl.get(name)}
+            for name in fam}
 
 
 def enrich_long_scores(long_df, metadata, models=MODELS) -> pd.DataFrame:

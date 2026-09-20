@@ -1,11 +1,3 @@
-from pathlib import Path
-
-
-PROCESSED_ROOT = Path(
-    "/scicore/home/schwede/barta0000/project/data/processed"
-)
-
-
 ANALYSIS_SETS = {
 
     "current": ["peptide", "sabdab_nb", "germinal0", "top5"],
@@ -21,7 +13,12 @@ ANALYSIS_SETS = {
     "designs": ["germinal0","esm0",], 
 }
 
-META_COLS = ["sample", "binder", "source", "type", "iteration", "binder_type", "dataset"]
+META_COLS = ["sample", "binder", "source", "type", "iteration", "binder_type", "dataset", "mol_type"]
+
+# Categories kept in the data for FILTERING only, and excluded from the model/benchmark
+# feature set (eval / RF / composite). Developability & energy metrics are used as
+# literature filtering gates (energy mainly for nanobodies) but are NOT features.
+FILTER_ONLY_CATEGORIES = {"developability", "energy"}
 
 EXCLUDE_COLS = ["KD[M]", "EC50[M]",]
 
