@@ -1,6 +1,6 @@
 """Metric evaluation: rankings, effect sizes, and redundancy structure."""
 
-from .metrics import calculate_all_metrics, top_metrics_distinct_family, load_metric_families, get_family
+from .metrics import calculate_all_metrics, top_metrics_distinct_family, load_metric_families, get_family, pass_mask, precision_recall_at, select_threshold
 from .effect_sizes import compute_auroc_pvalue, cliffs_delta, cohens_d
 from .redundancy import (
     prepare_metric_matrix,
@@ -23,6 +23,9 @@ from .plots import (
 
 __all__ = [
     "calculate_all_metrics",
+    "pass_mask",
+    "precision_recall_at",
+    "select_threshold",
     "top_metrics_distinct_family",
     "load_metric_families",
     "get_family",

@@ -19,6 +19,16 @@ import os
 from config.paths import RAW_DATA_DIR
 from config.analysis import ANALYSIS_SETS
 
+# ---------------------------------------------------------------------
+# Root for prediction input files.
+# These originals live outside the project's data/ tree; keep them under one
+# root so the whole set moves with a single EXTERNAL_DATA_ROOT override.
+# Default reproduces the original scicore location for zero-config runs there.
+# ---------------------------------------------------------------------
+EXTERNAL_DATA_ROOT = Path(
+    os.getenv("EXTERNAL_DATA_ROOT", "/scicore/home/schwede/barta0000")
+).expanduser()
+
 
 
 
@@ -33,9 +43,9 @@ class DatasetConfig:
     predictions_path: Path | None = None
     mastertable_path: Path | None = None
     mastertable_strategy: str | None = None
-    ambiguous_target: str | None = None
     keep_interfaces: set[str] | None = None
     members: tuple[str, ...] | None = None   # populated only for pooled sets
+    mol_type: str | None = None              # 'nanobody' / 'antibody' (persisted downstream)
 
     @property
     def is_set(self) -> bool:
@@ -52,17 +62,21 @@ def make_dataset(
     name: str,
     predictions: str | Path,
     mastertable_strategy: str | None = None,
-    ambiguous_target: str | None = None,
     keep_interfaces: set[str] | None = None,
+    mol_type: str | None = None,
 ) -> DatasetConfig:
+
+    # molecule type defaults to the mastertable strategy (nanobody / antibody)
+    if mol_type is None and mastertable_strategy in {"nanobody", "antibody"}:
+        mol_type = mastertable_strategy
 
     return DatasetConfig(
         name=name,
         predictions_path=Path(predictions),
         mastertable_path=RAW_DATA_DIR / f"mt_{name}.csv",
         mastertable_strategy=mastertable_strategy,
-        ambiguous_target=ambiguous_target,
         keep_interfaces=keep_interfaces,
+        mol_type=mol_type,
     )
 
 # ---------------------------------------------------------------------
@@ -73,70 +87,69 @@ DATASETS = {
 
     "mcmahon": make_dataset(
         name="mcmahon",
-        predictions="/scicore/home/schwede/barta0000/project/data/raw/preds_mcmahon.csv",
+        predictions=EXTERNAL_DATA_ROOT / "project/data/raw/preds_mcmahon.csv",
         mastertable_strategy="nanobody",
-        ambiguous_target="HSA",
     ),
 
     "snir": make_dataset(
         name="snir",
-        predictions="/scicore/home/schwede/barta0000/scoring_pipeline/run1/predictions.csv",
+        predictions=EXTERNAL_DATA_ROOT / "scoring_pipeline/run1/predictions.csv",
         keep_interfaces={"A,C", "B,C"},
         mastertable_strategy="antibody",
     ),
 
     "germinal": make_dataset(
         name="germinal",
-        predictions="/scicore/home/schwede/barta0000/project/data/raw/preds_germinal.csv",
+        predictions=EXTERNAL_DATA_ROOT / "project/data/raw/preds_germinal.csv",
         mastertable_strategy="nanobody",
     ),
 
     "harvey": make_dataset(
         name="harvey",
-        predictions="/scicore/home/schwede/barta0000/project/data/raw/preds_harvey.csv",
+        predictions=EXTERNAL_DATA_ROOT / "project/data/raw/preds_harvey.csv",
         mastertable_strategy="nanobody",
     ),
 
     "peptide": make_dataset(
         name="peptide",
-        predictions="/scicore/home/schwede/barta0000/peptide_ds/originals/predictions_with_sap.csv",
+        predictions=EXTERNAL_DATA_ROOT / "peptide_ds/originals/predictions_with_sap.csv",
         mastertable_strategy="nanobody",
     ),
 
     "alphaseq": make_dataset(
         name="alphaseq",
-        predictions="/scicore/home/schwede/barta0000/alphaseq_ds/predictions_v1.csv",
+        predictions=EXTERNAL_DATA_ROOT / "alphaseq_ds/predictions_v1.csv",
         mastertable_strategy="antibody",
         keep_interfaces={"A,C", "B,C"},
     ),
     
     "germinal0": make_dataset(
         name="germinal0",
-        predictions="/scicore/home/schwede/barta0000/candidates/germinal/germinal0/predictions_with_sap.csv",
+        predictions=EXTERNAL_DATA_ROOT / "candidates/germinal/germinal0/predictions_with_sap.csv",
         mastertable_strategy="nanobody",
     ),
     
     "esm0": make_dataset(
         name="esm0",
-        predictions="/scicore/home/schwede/barta0000/candidates/esm/esm0/predictions.csv",
+        predictions=EXTERNAL_DATA_ROOT / "candidates/esm/esm0/predictions.csv",
         mastertable_strategy="nanobody",
     ),
 
     "top5": make_dataset(
         name="top5",
-        predictions="/scicore/home/schwede/barta0000/candidates/top5/predictions_with_sap.csv",
+        predictions=EXTERNAL_DATA_ROOT / "candidates/top5/predictions_with_sap.csv",
         mastertable_strategy="nanobody",
     ),
 
     "benoit": make_dataset(
         name="benoit",
-        predictions="/scicore/home/schwede/barta0000/benoit_ds/originals/predictions.csv",
+        predictions=EXTERNAL_DATA_ROOT / "benoit_ds/originals/predictions.csv",
         mastertable_strategy="antibody",
     ),
 
     "sabdab_nb": make_dataset(
         name="sabdab_nb",
-        predictions="/scicore/home/schwede/barta0000/sabdab/nb/predictions_with_sap.csv",
+        predictions=EXTERNAL_DATA_ROOT / "sabdab/nb/predictions_with_sap.csv",
         mastertable_strategy="nanobody",
     ),
 

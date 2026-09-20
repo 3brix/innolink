@@ -51,6 +51,7 @@ else:
         mastertable=mastertable,
         output_path=output_path,
         keep_interfaces=cfg.keep_interfaces,
+        mol_type=cfg.mol_type,
     )
 
     logger.info("Finished. Base tables for %d rows written to %s", len(merged), output_path.parent)

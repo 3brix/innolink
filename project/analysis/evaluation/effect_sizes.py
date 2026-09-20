@@ -36,7 +36,8 @@ def compute_auroc_pvalue(df: pd.DataFrame, metrics: list[str], directions: dict[
         pos, neg = pn
         u, p = mannwhitneyu(pos, neg, alternative="greater")
         rows.append({"metric": col, "auroc": round(u / (len(pos) * len(neg)), 4), "p_value": round(float(p), 6)})
-    return pd.DataFrame(rows).sort_values("auroc", ascending=False)
+    out = pd.DataFrame(rows)
+    return out.sort_values("auroc", ascending=False) if "auroc" in out.columns else out
 
 
 def cliffs_delta(df: pd.DataFrame, metrics: list[str], directions: dict[str, int]) -> pd.DataFrame:
@@ -52,7 +53,8 @@ def cliffs_delta(df: pd.DataFrame, metrics: list[str], directions: dict[str, int
         u, _ = mannwhitneyu(pos, neg, alternative="two-sided")
         auroc = u / (len(pos) * len(neg))
         rows.append({"metric": col, "cliffs_delta": round(2 * auroc - 1, 4)})
-    return pd.DataFrame(rows).sort_values("cliffs_delta", key=abs, ascending=False)
+    out = pd.DataFrame(rows)
+    return out.sort_values("cliffs_delta", key=abs, ascending=False) if "cliffs_delta" in out.columns else out
 
 
 def cohens_d(df: pd.DataFrame, metrics: list[str], directions: dict[str, int]) -> pd.DataFrame:
@@ -71,4 +73,5 @@ def cohens_d(df: pd.DataFrame, metrics: list[str], directions: dict[str, int]) -
         pooled = np.sqrt(((n1 - 1) * pos.std(ddof=1) ** 2 + (n2 - 1) * neg.std(ddof=1) ** 2) / (n1 + n2 - 2))
         d = (pos.mean() - neg.mean()) / pooled if pooled > 0 else np.nan
         rows.append({"metric": col, "cohens_d": round(float(d), 4)})
-    return pd.DataFrame(rows).sort_values("cohens_d", key=abs, ascending=False)
+    out = pd.DataFrame(rows)
+    return out.sort_values("cohens_d", key=abs, ascending=False) if "cohens_d" in out.columns else out

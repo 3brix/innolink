@@ -9,6 +9,8 @@ from config.prep import COLS_TO_DROP
 from config.analysis import EXCLUDE_COLS
 from preprocessing.chai_metrics import process_chai_metrics
 from preprocessing.metadata import add_binder_type, split_eval_design
+from preprocessing.metric_meta import load_categories, get_category
+from config.analysis import FILTER_ONLY_CATEGORIES
 
 
 
@@ -120,19 +122,28 @@ def prepare_dataset(
     output_path: str | Path,
     keep_interfaces: set[str] | None = None,
     target_shuffle_path: str | Path | None = None,
+    mol_type: str | None = None,
 ):
     """
     Build tables: merged.csv + eval.csv + design.csv.
     """
     predictions = load_predictions(predictions_path, target_shuffle_path, keep_interfaces)
     predictions = aggregate_predictions(predictions)
-    predictions = drop_columns(predictions, COLS_TO_DROP)
+    # Keep developability/energy columns (filtering-only categories) so the filter can
+    # use them; everything else in COLS_TO_DROP is still dropped. These kept columns are
+    # excluded from the feature set by get_metric_columns, so eval/RF/composite are
+    # unaffected -- they are available for filtering (energy mainly for nanobodies).
+    _cats = load_categories()
+    _drop = [c for c in COLS_TO_DROP if get_category(c, _cats) not in FILTER_ONLY_CATEGORIES]
+    predictions = drop_columns(predictions, _drop)
     predictions = normalize_plddt(predictions)
 
     validate_dataframe(mastertable, {"sample"}, name="mastertable")
     merged = merge_with_mastertable(predictions, mastertable)
     merged = process_chai_metrics(merged)
     merged = add_binder_type(merged)
+    if mol_type is not None:
+        merged["mol_type"] = mol_type          # nanobody / antibody, persisted for stratified reporting
     warn_experimental_columns(merged)
 
     save_dataframe(merged, output_path)

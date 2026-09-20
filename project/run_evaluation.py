@@ -7,6 +7,7 @@ from config.paths import RAW_DATA_DIR, EVALUATION_DIR, METRIC_YAML
 from preprocessing.align import load_metric_directions, align_dataframe
 from preprocessing.metadata import split_eval_design
 from analysis.distributions import get_numeric_metrics
+from analysis.io import load_eval
 from analysis.evaluation import (
     calculate_all_metrics,
     compute_auroc_pvalue,
@@ -29,13 +30,17 @@ base = RAW_DATA_DIR / cfg.name
 output_dir = EVALUATION_DIR / cfg.name
 output_dir.mkdir(parents=True, exist_ok=True)
 
-eval_path = base / "eval.csv"
-if eval_path.exists():
-    df = pd.read_csv(eval_path)
-    logger.info("Evaluation on %s (%d labeled rows)", eval_path.name, len(df))
-else:
-    df, _ = split_eval_design(pd.read_csv(base / "merged.csv"))
-    logger.info("eval.csv absent; derived eval split from merged.csv (%d labeled rows)", len(df))
+df = load_eval(cfg)
+logger.info("Evaluation (BENCHMARK) on %d labelled rows", len(df))
+
+# Benchmarking compares binders vs non-binders, so it needs BOTH classes present.
+_classes = pd.to_numeric(df["binder"], errors="coerce").dropna().unique()
+if len(_classes) < 2:
+    logger.warning(
+        "Only one binder class present (%s) in %d labelled rows -- cannot benchmark "
+        "binder vs non-binder. Skipping evaluation. Check that predictions and the "
+        "mastertable share sample IDs across both classes.", sorted(_classes), len(df))
+    raise SystemExit(0)
 
 metrics = get_numeric_metrics(df)
 directions = load_metric_directions(METRIC_YAML)
@@ -74,3 +79,17 @@ if cfg.is_set and "dataset" in df.columns:
     pd.concat(cliffs_by, ignore_index=True).to_csv(output_dir / "cliffs_delta_by_dataset.csv", index=False)
     pd.concat(cohens_by, ignore_index=True).to_csv(output_dir / "cohens_d_by_dataset.csv", index=False)
     print(f"Set '{cfg.name}': wrote pooled + per-dataset breakdown ({df['dataset'].nunique()} datasets)")
+
+# per-molecule-type breakdown (nanobody vs antibody), when the set mixes types
+if "mol_type" in df.columns and df["mol_type"].nunique() > 1:
+    parts = []
+    for mt, group in df.groupby("mol_type"):
+        if group["binder"].nunique() < 2:
+            logger.warning("skipping mol_type %s: single binder class (%d rows)", mt, len(group))
+            continue
+        r = calculate_all_metrics(group, metrics, directions)
+        r.insert(0, "mol_type", mt)
+        parts.append(r)
+    if parts:
+        pd.concat(parts, ignore_index=True).to_csv(output_dir / "rankings_by_mol_type.csv", index=False)
+        print(f"Set '{cfg.name}': wrote per-mol_type breakdown ({df['mol_type'].nunique()} types)")

@@ -2,7 +2,7 @@ import pandas as pd
 
 from config.datasets import cfg
 from config.paths import RAW_DATA_DIR, QC_DIR, ensure_directory
-from analysis.qc.checks import check_basic_integrity, metric_description, missing_metrics_by_sample, nonfinite_report
+from analysis.distributions.qc import check_basic_integrity, metric_description, missing_metrics_by_sample, nonfinite_report
 
 
 input_path = RAW_DATA_DIR / cfg.name / "merged.csv"
