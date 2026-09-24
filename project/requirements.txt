@@ -1,0 +1,29 @@
+# ---------------------------------------------------------------------------
+# Binder benchmarking & design-ranking pipeline -- Python dependencies
+# ---------------------------------------------------------------------------
+# These are LOWER BOUNDS chosen for the APIs the code uses, not exact pins.
+# For a fully reproducible environment, create/activate your env, install these,
+# then freeze exact versions on the machine you actually run on:
+#
+#     pip install -r requirements.txt
+#     pip freeze > requirements.lock.txt
+#
+# and commit requirements.lock.txt alongside your results.
+# ---------------------------------------------------------------------------
+
+# Core analysis stack
+numpy>=1.24
+pandas>=2.0
+scipy>=1.10
+scikit-learn>=1.4   # >=1.4: RandomForest tolerates NaN features (used when scoring designs)
+pyyaml>=6.0
+
+# Plotting (figures / *_plots.ipynb notebooks)
+matplotlib>=3.7
+seaborn>=0.13
+
+# Running the Random Forest ranking notebook headlessly as a pipeline stage
+# (jupyter nbconvert --execute notebooks/ranking_rf_final.ipynb)
+nbconvert>=7.0
+nbformat>=5.0
+ipykernel>=6.0

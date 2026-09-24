@@ -3,8 +3,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-# Canonical metric metadata lives in preprocessing.metric_meta; these are kept as
-# re-exports under their historical names so existing imports keep working.
+# re-export canonical metric metadata (function in preprocessing.metric_meta)
 from preprocessing.metric_meta import (
     get_metric_columns,
     load_directions as load_metric_directions,

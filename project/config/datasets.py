@@ -2,13 +2,13 @@
 Dataset-specific configuration.
 
 Select via the DATASET environment variable. It accepts either a single dataset
-or a pooled analysis set (from ``config.analysis.ANALYSIS_SETS``):
+or a pooled analysis set (from config.analysis.ANALYSIS_SETS):
 
     export DATASET=alphaseq     # one dataset
     export DATASET=antibody     # a pooled set (alphaseq + snir)
 
-The selection is available as `cfg`. A set cfg has ``members`` populated and
-``is_set == True``; downstream runners only use ``cfg.name`` and work the same
+The selection is available as 'cfg'. A set cfg has members populated and
+'is_set == True'; downstream runners only use 'cfg.name' and work the same
 either way (a set is materialized as a virtual dataset under RAW_DATA_DIR).
 """
 
@@ -19,23 +19,16 @@ import os
 from config.paths import RAW_DATA_DIR
 from config.analysis import ANALYSIS_SETS
 
-# ---------------------------------------------------------------------
+
 # Root for prediction input files.
-# These originals live outside the project's data/ tree; keep them under one
-# root so the whole set moves with a single EXTERNAL_DATA_ROOT override.
-# Default reproduces the original scicore location for zero-config runs there.
-# ---------------------------------------------------------------------
 EXTERNAL_DATA_ROOT = Path(
     os.getenv("EXTERNAL_DATA_ROOT", "/scicore/home/schwede/barta0000")
 ).expanduser()
 
 
 
-
-
-# ---------------------------------------------------------------------
 # Dataset definition
-# ---------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class DatasetConfig:
@@ -43,6 +36,7 @@ class DatasetConfig:
     predictions_path: Path | None = None
     mastertable_path: Path | None = None
     mastertable_strategy: str | None = None
+    #ambiguous_target: str | None = None
     keep_interfaces: set[str] | None = None
     members: tuple[str, ...] | None = None   # populated only for pooled sets
     mol_type: str | None = None              # 'nanobody' / 'antibody' (persisted downstream)
@@ -62,6 +56,7 @@ def make_dataset(
     name: str,
     predictions: str | Path,
     mastertable_strategy: str | None = None,
+    #ambiguous_target: str | None = None,
     keep_interfaces: set[str] | None = None,
     mol_type: str | None = None,
 ) -> DatasetConfig:
@@ -75,6 +70,7 @@ def make_dataset(
         predictions_path=Path(predictions),
         mastertable_path=RAW_DATA_DIR / f"mt_{name}.csv",
         mastertable_strategy=mastertable_strategy,
+        #ambiguous_target=ambiguous_target,
         keep_interfaces=keep_interfaces,
         mol_type=mol_type,
     )
@@ -89,6 +85,7 @@ DATASETS = {
         name="mcmahon",
         predictions=EXTERNAL_DATA_ROOT / "project/data/raw/preds_mcmahon.csv",
         mastertable_strategy="nanobody",
+        #ambiguous_target="HSA",
     ),
 
     "snir": make_dataset(
@@ -156,10 +153,8 @@ DATASETS = {
 }
 
 
-# ---------------------------------------------------------------------
-# Pooled analysis sets (from config.analysis.ANALYSIS_SETS)
-# ---------------------------------------------------------------------
 
+# Pooled analysis sets (from config.analysis.ANALYSIS_SETS)
 SETS = {
     name: DatasetConfig(name=name, members=tuple(members))
     for name, members in ANALYSIS_SETS.items()
@@ -179,9 +174,8 @@ for _set, _c in SETS.items():
 SELECTABLE = {**DATASETS, **SETS}
 
 
-# ---------------------------------------------------------------------
+
 # Select current dataset or set
-# ---------------------------------------------------------------------
 
 DATASET = os.getenv("DATASET", "rf").lower()
 

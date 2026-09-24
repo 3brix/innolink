@@ -1,12 +1,10 @@
-"""Columns removed during preprocessing (config.prep.COLS_TO_DROP).
-
-Curation list for the prediction tables. Grouped by reason below. NOTE: the
-developability/energy group is retained by data_prep (category-aware drop) for
-filtering; every other group is dropped. Membership is unchanged by the grouping.
+"""
+Columns removed during preprocessing (config.prep.COLS_TO_DROP).
+Curation list for the prediction tables. Grouped by reason below.
 """
 
 COLS_TO_DROP = [
-    # Non-metric columns (labels, file paths) -- never features.
+    # Non-metric columns (labels, file paths) --> never features
     "binding",
     "interface",
     "chai_unconstrained_model_path",
@@ -14,14 +12,14 @@ COLS_TO_DROP = [
     "boltz_free_model_path",
     "boltz_template_model_path",
 
-    # Rank / ranking-score columns (ordinal artefacts, not comparable metrics).
+    # rank / ranking-score columns
     "af3_rank",
     "af3_ranking_score",
     "af3_rank0_masif",
     "cf_rank",
     "cf_rank0_masif",
 
-    # MPNN sequence metrics (confidence / negative log-likelihood) -- dropped from the analysed set.
+    # MPNN sequence metrics --> currently dropped
     "cf_mpnn_confidence",
     "cf_mpnn_nll",
     "cf_mpnn_nll_a",
@@ -51,7 +49,7 @@ COLS_TO_DROP = [
     "boltz_template_mpnn_nll_a",
     "boltz_template_mpnn_nll_b",
 
-    # ESMFold (v1) columns -- this model is excluded from the analysis.
+    # ESMFold (v1) columns --> model is excluded
     "esmfold_pae",
     "esmfold_plddt",
     "esmfold_ptm",
@@ -62,7 +60,7 @@ COLS_TO_DROP = [
     "esmfold_mpnn_nll_a",
     "esmfold_mpnn_nll_b",
 
-    # Chai-1 duplicate confidence/interface columns not used in the analysed set.
+    # Chai-1 --> currently dropped + duplicate confidence/interface columns (stay dropped)
     "chai_unconstrained_score",
     "chai_unconstrained_aggregate_score",
     "chai_unconstrained_ptm",
@@ -86,15 +84,16 @@ COLS_TO_DROP = [
     "chai_unconstrained_pdockq",
     "chai_constrained_pdockq",
 
-    # pDockQ (v1) columns -- pdockq2 is used instead.
+    # pDockQ (v1) columns --> excluded, pDockQ2 is used instead
     "af3_pdockq",
     "cf_pdockq",
     "boltz_free_pdockq",
     "boltz_template_pdockq",
 
-    # Developability & energy metrics -- KEPT through preprocessing by data_prep's
-    # category-aware drop (used for filtering, energy mainly for nanobodies); listed here so
-    # they are excluded when this list IS applied, but data_prep re-includes them.
+    # Developability & energy metrics --> kept through preprocessing by data_prep
+    # because they are used for filtering (only nanobodies) 
+    # still listed here --> if filtering strategy would change
+    # TO DO: they are used for filtering --> check if its clean!
     "cf_esm3dg_dg",
     "cf_esm3dg_dg_a",
     "cf_esm3dg_dg_b",
@@ -156,7 +155,6 @@ COLS_TO_DROP = [
     "cf_sap_score_complex",
     "cf_dsap",
 
-    # Other curated-out columns.
     "af3_interface_dSASA",
     "af3_interface_interface_hbonds",
     "cf_interface_dSASA",

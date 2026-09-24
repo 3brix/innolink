@@ -16,15 +16,23 @@ ANALYSIS_SETS = {
 META_COLS = ["sample", "binder", "source", "type", "iteration", "binder_type", "dataset", "mol_type"]
 
 # Categories kept in the data for FILTERING only, and excluded from the model/benchmark
-# feature set (eval / RF / composite). Developability & energy metrics are used as
-# literature filtering gates (energy mainly for nanobodies) but are NOT features.
-FILTER_ONLY_CATEGORIES = {"developability", "energy"}
+# feature set (eval / RF / composite). 
+FILTER_ONLY_CATEGORIES = {"developability", "energy", "error"}
+
+# Ranking benchmark: precision@pct (10%)  + PR-AUC, reported
+PRECISION_AT_PERCENT = 0.10
+
+# Precision-first filtering threshold, pick the highest-recall cutoff that reaches
+# PRECISION_TARGET while retaining >= N_MIN samples. 
+# TO DO: finalize on the by inspecting threshold_sweep.csv.
+PRECISION_TARGET = 0.70
+N_MIN = 10
 
 EXCLUDE_COLS = ["KD[M]", "EC50[M]",]
 
 EXCLUDE_COLUMNS = META_COLS + EXCLUDE_COLS
 
-# --- Plot styling ---
+# Plot styling
 COLORS_MAP = {
     "Binder": "#2ecc71",
     "Design": "#d68039",    
@@ -32,7 +40,7 @@ COLORS_MAP = {
     "Mutant+": "#40ebdd",
     "Mutant-": "#ac40eb",
     #"Target Shuffle": "#273397",
-    "germinal": "#2ecc71",
+    #"germinal": "#2ecc71",
     #"mcmahon": "#d6a439",
     "snir_ab": "#1f3397",
     #"harvey": "#971f3d",
@@ -46,10 +54,11 @@ COLORS_MAP = {
     "sabdab": "#FF1493",
 }
 
-# Window metric families: an optimal RANGE, not higher/lower-is-better..)
-WINDOW_FAMILIES = {"net_charge", "surface_hydrophobicity"}
+# Window metric families: an optimal range, not higher/lower-is-better..)
+WINDOW_FAMILIES = {"interface_dg", "interface_dG_SASA-ratio","interface_hbonds", "interface_nres", "delta_unsat_hbonds", "net_charge", "surface_hydrophobicity"}
 
-# composite test (unused)
+# model prefixes
 MODELS = ["af3", "cf", "esmfold", "esmfold2", "chai_constrained", "chai_unconstrained", "boltz_free", "boltz_template"]
-QUALITY_THRESHOLDS = {"af3_iptm": 0.5, "af3_plddt": 0.8}  # plddt is 0-1 post data_prep.normalize_plddt (decision: 0.8, was stale 80)
-QUALITY_MODE = "any"
+
+#QUALITY_THRESHOLDS = {"af3_iptm": 0.5, "af3_plddt": 0.8} 
+#QUALITY_MODE = "any"
