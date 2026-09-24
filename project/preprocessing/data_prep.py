@@ -129,10 +129,7 @@ def prepare_dataset(
     """
     predictions = load_predictions(predictions_path, target_shuffle_path, keep_interfaces)
     predictions = aggregate_predictions(predictions)
-    # Keep developability/energy columns (filtering-only categories) so the filter can
-    # use them; everything else in COLS_TO_DROP is still dropped. These kept columns are
-    # excluded from the feature set by get_metric_columns, so eval/RF/composite are
-    # unaffected -- they are available for filtering (energy mainly for nanobodies).
+    # keep developability/energy columns 
     _cats = load_categories()
     _drop = [c for c in COLS_TO_DROP if get_category(c, _cats) not in FILTER_ONLY_CATEGORIES]
     predictions = drop_columns(predictions, _drop)

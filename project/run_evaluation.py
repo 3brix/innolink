@@ -1,11 +1,11 @@
 import logging
+import os
 
 import pandas as pd
 
 from config.datasets import cfg
 from config.paths import RAW_DATA_DIR, EVALUATION_DIR, METRIC_YAML
 from preprocessing.align import load_metric_directions, align_dataframe
-from preprocessing.metadata import split_eval_design
 from analysis.distributions import get_numeric_metrics
 from analysis.io import load_eval
 from analysis.evaluation import (
@@ -17,7 +17,7 @@ from analysis.evaluation import (
     load_metric_families,
     get_family,
 )
-from config.analysis import WINDOW_FAMILIES
+from config.analysis import WINDOW_FAMILIES, PRECISION_AT_PERCENT
 
 
 logging.basicConfig(level=logging.INFO)
@@ -55,7 +55,9 @@ if _window_cols:
                 len(_window_cols), _window_cols)
 
 # pooled / single-dataset ranking + effect sizes + redundancy
-calculate_all_metrics(df, metrics, directions).to_csv(output_dir / "rankings.csv", index=False)
+_pct = float(os.getenv("PRECISION_AT_PERCENT", PRECISION_AT_PERCENT))
+logger.info("Benchmark: precision@%.0f%% + PR-AUC point estimates (pooled + per-dataset + per-mol_type)", _pct*100)
+calculate_all_metrics(df, metrics, directions, pct=_pct).to_csv(output_dir / "rankings.csv", index=False)
 compute_auroc_pvalue(df, metrics, directions).to_csv(output_dir / "auroc_pvalue.csv", index=False)
 cliffs_delta(df, metrics, directions).to_csv(output_dir / "cliffs_delta.csv", index=False)
 cohens_d(df, metrics, directions).to_csv(output_dir / "cohens_d.csv", index=False)
@@ -72,7 +74,7 @@ if cfg.is_set and "dataset" in df.columns:
         if group["binder"].nunique() < 2:
             logger.warning("skipping %s: single binder class (%d rows)", ds, len(group))
             continue
-        r = calculate_all_metrics(group, metrics, directions); r.insert(0, "dataset", ds); rankings_by.append(r)
+        r = calculate_all_metrics(group, metrics, directions, pct=_pct); r.insert(0, "dataset", ds); rankings_by.append(r)
         c = cliffs_delta(group, metrics, directions);          c.insert(0, "dataset", ds); cliffs_by.append(c)
         d = cohens_d(group, metrics, directions);              d.insert(0, "dataset", ds); cohens_by.append(d)
     pd.concat(rankings_by, ignore_index=True).to_csv(output_dir / "rankings_by_dataset.csv", index=False)
@@ -87,7 +89,7 @@ if "mol_type" in df.columns and df["mol_type"].nunique() > 1:
         if group["binder"].nunique() < 2:
             logger.warning("skipping mol_type %s: single binder class (%d rows)", mt, len(group))
             continue
-        r = calculate_all_metrics(group, metrics, directions)
+        r = calculate_all_metrics(group, metrics, directions, pct=_pct)
         r.insert(0, "mol_type", mt)
         parts.append(r)
     if parts:

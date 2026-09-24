@@ -19,10 +19,8 @@ def load_processed_datasets(datasets, root):
         dfs.append(df)
     return pd.concat(dfs, ignore_index=True)
 
-# ---------------------------------------------------------------------
-# Convenience loaders (remove repeated eval/design/rankings boilerplate)
-# ---------------------------------------------------------------------
 
+# Convenience loaders (remove repeated eval/design/rankings)
 def _base(cfg):
     from config.paths import RAW_DATA_DIR
     return Path(RAW_DATA_DIR) / cfg.name

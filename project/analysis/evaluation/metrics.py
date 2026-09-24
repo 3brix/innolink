@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-import yaml
-from sklearn.metrics import roc_auc_score, precision_recall_curve, average_precision_score, f1_score, matthews_corrcoef
-from preprocessing.metric_meta import get_direction, get_family, load_families as load_metric_families
+from sklearn.metrics import roc_auc_score, precision_recall_curve, average_precision_score  # F1/MCC dropped from the ranking benchmark; re-add f1_score, matthews_corrcoef to restore
+from preprocessing.metric_meta import get_direction, get_family, load_families as load_metric_families  # re-exported via analysis.evaluation.__init__
+from analysis.evaluation.ranking_metrics import precision_at_percent
+from config.analysis import PRECISION_AT_PERCENT
 
 def pass_mask(values: pd.Series, cutoff: float, direction: int) -> pd.Series:
     """Boolean mask: True where a value is on the better side of `cutoff` for its
@@ -86,8 +87,11 @@ def select_threshold(y_true, aligned_scores, precision_target: float, n_min: int
     return pack(best, "no_nmin")
 
 
-def calculate_all_metrics(df: pd.DataFrame, metrics: list[str], directions: dict[str, int]) -> pd.DataFrame:
-    """Per-metric ROC-AUC, PR-AUC, and F1 at the PR-curve-optimal threshold."""
+def calculate_all_metrics(df: pd.DataFrame, metrics: list[str], directions: dict[str, int],
+                          pct: float = PRECISION_AT_PERCENT) -> pd.DataFrame:
+    """Per-metric benchmark: ROC-AUC, PR-AUC (primary), precision@`pct` (default 10%),
+    and F1/precision/recall/MCC at the PR-curve-optimal threshold. All in-sample on the
+    benchmark (no fitting) and reported as POINT ESTIMATES (see the PR-AUC "To Test" note)."""
     results = []
 
     for col in metrics:
@@ -106,7 +110,21 @@ def calculate_all_metrics(df: pd.DataFrame, metrics: list[str], directions: dict
 
             raw_roc = roc_auc_score(y_true, y_raw)
             aligned_roc = roc_auc_score(y_true, aligned)
+            # To Test: lineage-grouped (cluster) bootstrap CI for PR-AUC -- resample parent
+            # lineages (sample.split('_')[0]), not rows, since DMS variants are non-independent
+            # and an i.i.d. bootstrap understates the variance on this small, clustered benchmark.
             pr_auc = average_precision_score(y_true, aligned)
+
+            # ranking-benchmark quantities: precision@pct (application-oriented) + PR-AUC,
+            # reported as point estimates. In-sample on the benchmark (no fitting), so they are
+            # optimistic; the composite/RF use out-of-fold scores instead.
+            prevalence = round(float((y_true == 1).mean()), 4)
+            p_at_pct, n_pos_at_pct, k_used = precision_at_percent(y_true, aligned, pct)
+            _rank_cols = {
+                "prevalence": prevalence, "pct": pct,
+                "precision_at_pct": round(p_at_pct, 4) if p_at_pct == p_at_pct else np.nan,
+                "n_pos_at_pct": n_pos_at_pct, "k": k_used,
+            }
 
             precisions, recalls, thresholds = precision_recall_curve(y_true, aligned)
             # precisions/recalls carry an extra (0, 1) endpoint -> use [:-1]
@@ -115,8 +133,7 @@ def calculate_all_metrics(df: pd.DataFrame, metrics: list[str], directions: dict
             if f1_scores.max() == 0:
                 results.append({
                     "metric": col, "raw_roc": round(raw_roc, 4), "aligned_roc": round(aligned_roc, 4),
-                    "pr_auc": round(pr_auc, 4), "f1": 0.0, "precision": 0.0, "recall": 0.0,
-                    "mcc": np.nan,
+                    "pr_auc": round(pr_auc, 4), **_rank_cols, "precision": 0.0, "recall": 0.0,
                     "opt_threshold": np.nan, "opt_threshold_raw": np.nan,
                     "direction": direction, "note": "degenerate_f1",
                 })
@@ -124,20 +141,17 @@ def calculate_all_metrics(df: pd.DataFrame, metrics: list[str], directions: dict
 
             best = int(np.argmax(f1_scores))
             best_thr = thresholds[best]
-            y_pred = (aligned >= best_thr).astype(int)
 
-            # MCC at the same F1-optimal threshold (supplementary, balanced measure).
-            # Undefined when predictions or labels are single-class -> NaN (documented).
-            mcc = (matthews_corrcoef(y_true, y_pred)
-                   if y_true.nunique() > 1 and len(np.unique(y_pred)) > 1 else np.nan)
-
+            # F1 and MCC are intentionally NOT reported for the single-metric ranking benchmark:
+            # both are threshold-dependent at this in-sample F1-optimal point (which the ranking
+            # task never uses), and MCC's imbalance-robustness is moot on the balanced benchmark.
+            # MCC still lives in the RF stage (mcc@0.5 on out-of-fold predictions). The F1-optimal
+            # threshold itself is kept below as a downstream reference cutoff (opt_threshold_raw).
             results.append({
                 "metric": col,
                 "raw_roc": round(raw_roc, 4),
                 "aligned_roc": round(aligned_roc, 4),
-                "pr_auc": round(pr_auc, 4),
-                "f1": round(f1_score(y_true, y_pred), 4),
-                "mcc": round(float(mcc), 4) if mcc == mcc else np.nan,
+                "pr_auc": round(pr_auc, 4), **_rank_cols,
                 "precision": round(float(precisions[:-1][best]), 4),
                 "recall": round(float(recalls[:-1][best]), 4),
                 "opt_threshold": round(float(best_thr), 4),

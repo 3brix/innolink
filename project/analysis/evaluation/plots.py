@@ -30,9 +30,9 @@ def _finish(save_path, show):
 
 
 def plot_top_metrics_bar(rankings, top_n=15, save_path=None, show=False):
-    """Grouped bar of ROC-AUC / PR-AUC / F1 / precision for the top-N metrics by PR-AUC."""
+    """Grouped bar of ROC-AUC / PR-AUC / precision@10% / precision for the top-N metrics by PR-AUC."""
     cols = [("aligned_roc", "ROC-AUC", "#e74c3c"), ("pr_auc", "PR-AUC", "#2ecc71"),
-            ("f1", "F1-Score", "#3498db"), ("precision", "Precision", "#f39c12")]   # config?
+            ("precision_at_pct", "Precision@10%", "#3498db"), ("precision", "Precision", "#f39c12")]
     top = rankings.head(top_n)
     x = np.arange(len(top))
     width = 0.2
@@ -115,14 +115,14 @@ def plot_precision_ranking(rankings, top_n=10, label_map=None, save_path=None, s
 
 
 def plot_metric_comparison_grid(rankings, save_path=None, show=False):
-    """2x3 scatter grid comparing ROC-AUC / PR-AUC / F1 / precision pairwise."""
+    """2x3 scatter grid comparing ROC-AUC / PR-AUC / precision@10% / precision pairwise."""
     pairs = [
         ("pr_auc", "aligned_roc", "PR-AUC", "ROC-AUC", "steelblue"),
-        ("aligned_roc", "f1", "ROC-AUC", "F1-Score", "seagreen"),
-        ("pr_auc", "f1", "PR-AUC", "F1-Score", "coral"),
+        ("aligned_roc", "precision_at_pct", "ROC-AUC", "Precision@10%", "seagreen"),
+        ("pr_auc", "precision_at_pct", "PR-AUC", "Precision@10%", "coral"),
         ("precision", "pr_auc", "Precision", "PR-AUC", "steelblue"),
         ("precision", "aligned_roc", "Precision", "ROC-AUC", "seagreen"),
-        ("precision", "f1", "Precision", "F1-Score", "coral"),
+        ("precision", "precision_at_pct", "Precision", "Precision@10%", "coral"),
     ]
     d = rankings.fillna(0)
     fig, axes = plt.subplots(2, 3, figsize=(16, 10))

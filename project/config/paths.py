@@ -7,19 +7,16 @@ Every location derives from PROJECT_ROOT, resolved in this order:
      so the pipeline runs from a fresh checkout with no configuration.
 
 DATA_DIR and RUNS_DIR can each be overridden the same way; by default they sit
-under PROJECT_ROOT. Overrides may also be placed in a `.env` file at the
+under PROJECT_ROOT. Overrides may also be placed in a .env file at the
 repository root (KEY=VALUE lines). Real environment variables always win over
-the `.env` file, which only fills in values that are not already set.
+the .env file, which only fills in values that are not already set.
 """
 
 from pathlib import Path
 import os
 
 
-# ---------------------------------------------------------------------
-# Minimal .env support (no third-party dependency)
-# ---------------------------------------------------------------------
-
+# Minimal .env support
 def _load_dotenv(env_file: Path) -> None:
     """Read KEY=VALUE lines from `env_file` into os.environ, without overriding
     variables that are already set in the real environment."""
@@ -36,15 +33,15 @@ def _load_dotenv(env_file: Path) -> None:
             os.environ.setdefault(key, value)
 
 
-# The repository root is the parent of this config/ directory.
+# repository root is the parent of this config / directory
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 
-# Load an optional .env sitting next to the code before reading any variable.
+# load optional .env
 _load_dotenv(_REPO_ROOT / ".env")
 
 
 def _env_path(var: str, default: Path) -> Path:
-    """Return Path from environment variable `var`, else `default`."""
+    """Return Path from environment variable 'var', else 'default'."""
     value = os.getenv(var)
     return Path(value).expanduser() if value else default
 
@@ -54,10 +51,7 @@ def ensure_directory(path: Path) -> Path:
     return path
 
 
-# ---------------------------------------------------------------------
 # Base project directories
-# ---------------------------------------------------------------------
-
 PROJECT_ROOT = _env_path("PROJECT_ROOT", _REPO_ROOT)
 DATA_DIR = _env_path("DATA_DIR", PROJECT_ROOT / "data")
 RUNS_DIR = _env_path("RUNS_DIR", PROJECT_ROOT / "runs")
