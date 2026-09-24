@@ -3,7 +3,6 @@ Config-driven quality filtering.
 
 Thresholds live as "{metric: value}" in config. Because the thresholds are raw-score cutoffs (e.g. af3_plddt < 80), the filter runs on the raw merged table.
 """
-# experimental, not yet implemented
 
 from __future__ import annotations
 
@@ -15,15 +14,14 @@ from preprocessing.align import get_direction
 def quality_filter(df: pd.DataFrame, thresholds: dict, directions: dict, mode: str = "any") -> pd.DataFrame:
     """
     Confidence QUALITY screen -- one of three distinct "filter" concepts in this project:
-      1. quality_filter (here)            -- flags low-CONFIDENCE samples (this function);
-      2. analysis.feasibility.apply_gates -- literature DEVELOPABILITY/ENERGY gates;
-      3. run_filter.py                    -- the design FILTER STAGE combining 1 + 2 + a
-                                             data-derived confidence funnel.
+      1. quality_filter (here)            -- flags low-confidence samples
+      2. analysis.feasibility.apply_gates -- literature / custom developability / energy / error gates;
+      3. run_filter.py                    -- the design filter stage combining 1 + 2
 
     Add a "quality_flag" column ("low_confidence" / "ok").
-    The flag side is taken from each metric's direction (see module docstring). 
+    The flag side is taken from each metric's direction. 
     mode="any" flags a sample if any rule matches, "all" only if all match. 
-    Missing columns are skipped; NaN values do not match a rule (they pass).
+    Missing columns are skipped --> NaN values do not match a rule (they pass).
     """
     df = df.copy()
     masks = []

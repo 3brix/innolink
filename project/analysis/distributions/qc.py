@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 
 from config.analysis import EXCLUDE_COLUMNS
-from preprocessing.metadata import add_binder_type
 
 
 logger = logging.getLogger(__name__)

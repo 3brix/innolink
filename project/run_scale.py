@@ -17,7 +17,7 @@ from preprocessing.scale import scale_dataframe
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-METHOD = os.environ.get("SCALER", "robust")
+METHOD = os.environ.get("SCALER", "standard")
 
 # source-suffix -> scaled-output-suffix
 VARIANTS = {

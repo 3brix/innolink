@@ -36,17 +36,6 @@ def load_eval(cfg) -> pd.DataFrame:
     return split_eval_design(pd.read_csv(base / "merged.csv"))[0]
 
 
-def load_design(cfg):
-    """Unlabelled design rows: design.csv, else split from merged.csv, else None."""
-    from preprocessing.metadata import split_eval_design
-    base = _base(cfg)
-    p = base / "design.csv"
-    if p.exists():
-        return pd.read_csv(p)
-    m = base / "merged.csv"
-    return split_eval_design(pd.read_csv(m))[1] if m.exists() else None
-
-
 def load_rankings(cfg):
     """The canonical single-metric benchmark (run_evaluation's rankings.csv), or None
     if it hasn't been produced yet."""

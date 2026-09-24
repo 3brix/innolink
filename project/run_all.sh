@@ -99,7 +99,7 @@ run_stage scale       python run_scale.py         # scale (SCALER)
 run_stage qc          python run_qc.py            # integrity / missingness / non-finite reports
 run_stage profiling   python run_profiling.py     # PROFILING: composition, class dist, missingness, ranges
 run_stage evaluation  python run_evaluation.py    # BENCHMARK: which metrics separate binders
-run_stage thresholds  python run_thresholds.py    # REPORT-ONLY: derived vs literature cutoffs
+run_stage thresholds  python run_thresholds.py    # REPORT-ONLY: custom /literature cutoffs
 run_stage composite   python run_composite.py     # leakage-safe composite metric development
 
 # ---------------------------------------------------------------------------
@@ -129,7 +129,7 @@ fi
 # run_consensus tolerates a missing RF file (until the RF notebook is wired):
 # it then reports the composite-only ranking instead of failing.
 # ---------------------------------------------------------------------------
-run_stage filter      python run_filter.py        # literature dev gates + data-derived confidence funnel
+run_stage filter      python run_filter.py        # literature /custom dev gates
 run_stage consensus   python run_consensus.py     # RF (primary) + composite -> shortlist + disagreement
 
 echo ""
