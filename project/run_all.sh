@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # ===========================================================================
-# run_all.sh — run the binder benchmarking & ranking pipeline end to end
+# run_all.sh - run the binder benchmarking & ranking pipeline end to end
 # ===========================================================================
 # Runs every stage in order for ONE dataset (or pooled set), stopping at the
 # first failure. All configuration comes from environment variables (see
 # README.md / .env.example); nothing is hardcoded here.
 #
 #   DATASET   which dataset or pooled set to run        (default: rf)
-#   SCALER    'robust' or 'standard' for run_scale.py   (default: robust)
+#   SCALER    'standard' or 'robust' for run_scale.py   (default: standard)
 #   RUN_RF    1 = also run the Random Forest notebook   (default: 1)
 #             set RUN_RF=0 to skip it (e.g. no Jupyter installed)
 #
 # One run directory is created up front (runs/<dataset>_<timestamp>/). It holds
 # a snapshot of config/, a manifest.json, per-stage logs, and the executed RF
-# notebook. Stage OUTPUT tables still land in data/ exactly as before — the run
+# notebook. Stage OUTPUT tables still land in data/ exactly as before - the run
 # directory is added for provenance, it does not move the pipeline's outputs.
 #
 # Usage:
@@ -35,7 +35,7 @@ export PYTHONPATH="${PYTHONPATH:-.}"
 # Configuration (all overridable from the environment / .env).
 # ---------------------------------------------------------------------------
 export DATASET="${DATASET:-rf}"
-export SCALER="${SCALER:-robust}"
+export SCALER="${SCALER:-standard}"
 RUN_RF="${RUN_RF:-1}"
 RF_NOTEBOOK="notebooks/ranking_rf_final.ipynb"
 
@@ -99,7 +99,7 @@ run_stage scale       python run_scale.py         # scale (SCALER)
 run_stage qc          python run_qc.py            # integrity / missingness / non-finite reports
 run_stage profiling   python run_profiling.py     # PROFILING: composition, class dist, missingness, ranges
 run_stage evaluation  python run_evaluation.py    # BENCHMARK: which metrics separate binders
-run_stage thresholds  python run_thresholds.py    # REPORT-ONLY: custom /literature cutoffs
+run_stage thresholds  python run_thresholds.py    # REPORT-ONLY: derived vs literature cutoffs
 run_stage composite   python run_composite.py     # leakage-safe composite metric development
 
 # ---------------------------------------------------------------------------
@@ -129,7 +129,7 @@ fi
 # run_consensus tolerates a missing RF file (until the RF notebook is wired):
 # it then reports the composite-only ranking instead of failing.
 # ---------------------------------------------------------------------------
-run_stage filter      python run_filter.py        # literature /custom dev gates
+run_stage filter      python run_filter.py        # feasibility screen: quality + literature developability gates
 run_stage consensus   python run_consensus.py     # RF (primary) + composite -> shortlist + disagreement
 
 echo ""

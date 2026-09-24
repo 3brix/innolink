@@ -1,11 +1,6 @@
 """
-PROFILING stage (lightweight, reproducible tables).
-
 Describes the data before benchmarking: class distribution, dataset/molecule-type
 composition and positive-class prevalence, per-metric missingness, and metric ranges.
-Detailed distribution/outlier/redundancy FIGURES stay in the optional notebooks
-(distributions_plots.ipynb, profiles_plots.ipynb, evaluation_plots.ipynb), which import
-the same summary functions so no computation is duplicated.
 
 Outputs (under PROCESSED_DATA_DIR/profiling/<dataset>/):
   composition.csv        per dataset[/mol_type]: counts + prevalence
@@ -30,8 +25,7 @@ logger = logging.getLogger(__name__)
 base = RAW_DATA_DIR / cfg.name
 output_dir = ensure_directory(PROCESSED_DATA_DIR / "profiling" / cfg.name)
 
-# Profile the full merged table (all rows incl. designs) so composition/missingness
-# cover everything; class distribution naturally reflects labelled vs design.
+# Profile the full merged table (all rows incl. designs)
 df = pd.read_csv(base / "merged.csv")
 logger.info("Profiling %s (%d rows, %d columns)", cfg.name, len(df), df.shape[1])
 

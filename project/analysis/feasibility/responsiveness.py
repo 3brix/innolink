@@ -5,7 +5,9 @@ import pandas as pd
 from scipy.stats import mannwhitneyu
 from preprocessing.align import get_direction
 
-# not a stage, decide on it later: the responsiveness / consistency analysis is a useful report, but not a gate. It is used to decide which metrics are trustworthy enough to use as gates in the composite metric.
+# not a stage, decide on it later: 
+# the responsiveness / consistency analysis is a useful report, but not a gate. 
+# It is used to decide which metrics are trustworthy enough to use as gates in the composite metric.
 
 
 def _pos_neg(df: pd.DataFrame, col: str, directions: dict):
@@ -32,7 +34,7 @@ def _hanley_mcneil_se(auc: float, n_pos: int, n_neg: int) -> float:
 def responsiveness(df: pd.DataFrame, metrics: list[str], directions: dict, group_col: str = "dataset") -> pd.DataFrame:
     """
     One row per (group, metric): cliffs_delta (+95% CI), auroc, n_pos, n_neg, sign.
-    Groups by `group_col` if present (pooled SET), else treats the whole frame as one
+    Groups by 'group_col' if present (pooled SET), else treats the whole frame as one
     series ("all"). Low-n groups still report -- the CI shows how wide the uncertainty is.
     """
     groups = df.groupby(group_col) if group_col in df.columns else [("all", df)]
@@ -60,9 +62,9 @@ def responsiveness(df: pd.DataFrame, metrics: list[str], directions: dict, group
 def consistency(resp: pd.DataFrame, group_col: str = "dataset") -> pd.DataFrame:
     """
     Cross-series summary per metric: how many systems it was measured in, the mean /
-    min / max Cliff's delta, and whether the SIGN is consistent across all systems
-    (min > 0 or max < 0). `consistent_sign` + a decent |mean_delta| is the "trustworthy
-    as a gate" signal; a metric that flips sign between systems is not.
+    min / max Cliff's delta, and whether the sign is consistent across all systems
+    (min > 0 or max < 0). 'consistent_sign' + a decent |mean_delta| is the "trustworthy
+    as a gate" signal (a metric that flips sign between systems is not).
     """
     if resp.empty:
         return pd.DataFrame(columns=["metric", "n_groups", "mean_delta", "min_delta", "max_delta", "consistent_sign"])

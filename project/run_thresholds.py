@@ -9,19 +9,11 @@ benchmark (eval.csv):
   - LITERATURE : the per-family value in config/thresholds.yaml.
 
 For each it reports precision, recall and N-passing, plus the metric's PR-AUC /
-ROC-AUC / effect direction and the class balance. This lets you SEE, side by
-side, how a benchmark-derived cutoff would behave versus the literature value,
-per metric and per category (confidence / interface / sequence vs
-developability / energy).
+ROC-AUC / effect direction and the class balance.
 
-IMPORTANT: this stage writes reports only. It does NOT change thresholds.yaml
-and does NOT change what run_filter.py uses. As agreed, developability/energy
-gates stay literature-based unless you decide, after reading this report, to
-adopt a derived cutoff. Developability/energy metrics are expected to separate
-binders near-randomly (PR-AUC ~ base rate); that non-separation is itself a
-reported result.
+IMPORTANT: this stage writes reports only.
 
-Two-sided WINDOW families (net_charge, surface_hydrophobicity) are excluded from
+Two-sided WINDOW families (e.g. net_charge, surface_hydrophobicity) are excluded from
 this one-sided report and listed separately.
 
 Outputs (under EVALUATION_DIR/<dataset>/thresholds/):
@@ -66,9 +58,7 @@ SWEEP_TARGETS = [0.6, 0.7, 0.8, 0.9, 0.95]                       # for the param
 def build_report(df: pd.DataFrame, metrics: list[str], directions: dict,
                  families: dict, categories: dict, lit_thresholds: dict,
                  derived: pd.DataFrame | None = None) -> pd.DataFrame:
-    """One row per metric: derived (F1-opt) vs literature cutoff, each with prec/recall/N.
-    `derived` = a precomputed rankings table (canonical, pooled); if None it is computed
-    here (used for the per-dataset breakdown, which is genuinely per-group)."""
+    """One row per metric: derived (F1-opt) vs literature cutoff, each with prec/recall/N."""
     if derived is None:
         derived = calculate_all_metrics(df, metrics, directions)
     derived = derived.set_index("metric")
@@ -101,8 +91,7 @@ def build_report(df: pd.DataFrame, metrics: list[str], directions: dict,
         aligned = df[m] * direction
         sel = select_threshold(y_true, aligned, PRECISION_TARGET, N_MIN)
         tp_cut_native = round(sel["threshold"] * direction, 4) if np.isfinite(sel["threshold"]) else np.nan
-        # enrichment: PRECISION enrichment (threshold-dependent) vs PR-AUC-vs-baseline
-        # (threshold-INDEPENDENT). Named distinctly on purpose -- these are NOT the same thing.
+        # enrichment: precision enrichment (threshold-dependent) vs PR-AUC-vs-baseline (threshold-independent).
         prec_enr = round(sel["precision"] / base_rate, 3) if (sel["precision"] == sel["precision"] and base_rate) else np.nan
         pr_auc_vs_base = round(pr_auc / base_rate, 3) if (np.isfinite(pr_auc) and base_rate) else np.nan
 
@@ -112,14 +101,14 @@ def build_report(df: pd.DataFrame, metrics: list[str], directions: dict,
             "pr_auc": pr_auc, "roc_auc": float(d.get("aligned_roc", np.nan)),
             "pr_auc_vs_baseline": pr_auc_vs_base,          # threshold-independent ranking enrichment
             "above_baseline": bool(pr_auc > base_rate) if np.isfinite(pr_auc) else False,
-            # F1-optimal cutoff (kept as REFERENCE)
+            # F1-optimal cutoff (kept as reference)
             "f1_cutoff": derived_cut,
             "f1_precision": der["precision"], "f1_recall": der["recall"], "f1_n_pass": der["n_pass"],
-            # target-precision + N-floor cutoff (precision-first; the filtering criterion)
+            # target-precision + N-floor cutoff (precision-first)
             "tp_cutoff": tp_cut_native,
             "tp_precision": sel["precision"], "tp_recall": sel["recall"],
             "tp_n_pass": sel["n_pass"], "tp_n_pos_retained": sel["n_pos_retained"],
-            "tp_precision_enrichment": prec_enr,           # threshold-DEPENDENT precision enrichment
+            "tp_precision_enrichment": prec_enr,           # threshold-dependent precision enrichment
             "tp_status": sel["status"],
             # literature cutoff (for comparison)
             "lit_cutoff": lit_cut,
@@ -130,7 +119,7 @@ def build_report(df: pd.DataFrame, metrics: list[str], directions: dict,
     return out.sort_values("pr_auc", ascending=False).reset_index(drop=True)
 
 
-# ------------------------------------------------------------------ run
+# run
 base = RAW_DATA_DIR / cfg.name
 output_dir = EVALUATION_DIR / cfg.name / "thresholds"
 output_dir.mkdir(parents=True, exist_ok=True)
@@ -143,7 +132,7 @@ families = load_metric_families(METRIC_YAML)
 categories = load_categories(METRIC_YAML)
 lit_thresholds = load_thresholds()
 
-# candidate metrics: numeric, minus two-sided window families (one-sided report)
+# candidate metrics: numeric, minus two-sided window families
 all_metrics = get_numeric_metrics(df)
 window_cols = [m for m in all_metrics if get_family(m, families) in WINDOW_FAMILIES]
 metrics = [m for m in all_metrics if m not in window_cols]
@@ -167,12 +156,9 @@ by_cat = (report.groupby("category")
           .sort_values("mean_pr_auc", ascending=False))
 by_cat.to_csv(output_dir / "threshold_report_by_category.csv", index=False)
 
-# ---------------------------------------------------------------------
-# Precision-target SWEEP (for choosing PRECISION_TARGET / N_MIN).
-# For each confidence/interface metric and each candidate precision target, show the
-# best-retaining cutoff (n_min=1) so you can see how many samples survive at each
-# precision. This is the table to inspect before fixing the operating parameters.
-# ---------------------------------------------------------------------
+
+# Precision-target sweep (for choosing PRECISION_TARGET / N_MIN).
+# For each confidence/interface metric and each candidate precision target, show the best-retaining cutoff (n_min=1) 
 _directions = directions
 sweep_rows = []
 for m in metrics:
@@ -193,7 +179,7 @@ if sweep_rows:
     logger.info("wrote threshold_sweep.csv (%d confidence/interface metrics x %d targets)",
                 len(sweep_rows) // len(SWEEP_TARGETS), len(SWEEP_TARGETS))
 
-# per-dataset breakdown for pooled sets (benchmark-fit numbers, reported per source)
+# per-dataset breakdown for pooled sets
 if cfg.is_set and "dataset" in df.columns:
     parts = []
     for ds, g in df.groupby("dataset"):

@@ -1,29 +1,7 @@
 """
 Consensus ranking of designs: Random Forest (primary) + product-composite.
 
-Combines the two rankers into one table, a shortlist ordered by the PRIMARY (RF)
-method, and a disagreement report. No blended score is created (see
-analysis.ranking.consensus).
-
-The shortlist is FILTER-AWARE: run_filter's per-design pass flags
-(filter/filtered_designs.csv) are joined in, and the shortlist keeps only designs that
-pass the filter. The complete RF ranking (consensus_scores.csv) and the filter funnel
-(filter/*) remain separate analysis outputs -- filtering is NOT moved before ranking; it
-is applied only at the final shortlist. If the filter stage hasn't run, the shortlist
-falls back to unfiltered top-k with a note.
-
-INPUT CONTRACT
-  RF design scores (PRIMARY):
-    EVALUATION_DIR/<dataset>/ranking/rf_design_scores.csv
-    required columns:  sample, p_binder        (higher = more likely binder)
-    -- produced by the RF notebook run as a stage. If absent, this stage reports the
-       composite-only ranking and says the RF scores are missing (it does not fail).
-  Composite design scores (COMPLEMENTARY):
-    EVALUATION_DIR/<dataset>/composite/composite_scores.csv   (from run_composite.py)
-    design rows are those whose `binder` is not 0/1 (unlabelled, "?").
-  Filter flags (OPTIONAL -- enables the filter-aware shortlist):
-    EVALUATION_DIR/<dataset>/filter/filtered_designs.csv      (from run_filter.py)
-    used columns: sample, passes_filter[, developability_unknown]
+Combines the two rankers into one table, a shortlist ordered by RF + disagreement report.
 
 Config:
   SHORTLIST_K       shortlist size / top-k for agreement flags (default 20)
@@ -84,14 +62,14 @@ def load_filter_flags() -> pd.DataFrame | None:
     f = pd.read_csv(fp)
     if "sample" not in f.columns or "passes_filter" not in f.columns:
         return None
-    # CSV round-trips booleans as strings -> coerce back to a real boolean
+    # strings -> boolean
     f["passes_filter"] = f["passes_filter"].astype(str).str.strip().str.lower().eq("true")
     cols = [c for c in ("sample", "passes_filter", "developability_unknown") if c in f.columns]
     return f[cols]
 
 
 def attach_filter(ranked: pd.DataFrame, flags: pd.DataFrame | None) -> pd.DataFrame:
-    """Left-join filter flags onto a ranked design table (keeps every design)."""
+    """Left-join filter flags onto a ranked design table."""
     if flags is None:
         out = ranked.copy()
         out["passes_filter"] = pd.NA
@@ -100,9 +78,7 @@ def attach_filter(ranked: pd.DataFrame, flags: pd.DataFrame | None) -> pd.DataFr
 
 
 def write_shortlist(ranked: pd.DataFrame, flags: pd.DataFrame | None, use_consensus_fn: bool) -> None:
-    """Write the FILTER-AWARE shortlist. `ranked` already carries passes_filter.
-    use_consensus_fn=True applies the RF+composite shortlist() (consensus/primary_only flag);
-    otherwise it is the composite-only fallback (plain top-k)."""
+    """Write the filter-aware shortlist."""
     if flags is not None:
         feasible = ranked[ranked["passes_filter"].eq(True)]
         notes.append(f"shortlist restricted to filter-passing designs "
@@ -115,7 +91,7 @@ def write_shortlist(ranked: pd.DataFrame, flags: pd.DataFrame | None, use_consen
 
 notes = []
 
-# --- composite design scores (required) ---
+# composite design scores required
 if not comp_path.exists():
     raise SystemExit(f"run_consensus: composite scores not found at {comp_path}; run run_composite.py first.")
 comp_all = pd.read_csv(comp_path)
@@ -129,7 +105,7 @@ flags = load_filter_flags()
 if flags is None:
     notes.append("filter results not found (run run_filter.py first); shortlist is NOT filter-aware.")
 
-# --- RF design scores (primary; may be absent until the notebook is wired) ---
+# RF design scores 
 if rf_path.exists():
     rf_designs = pd.read_csv(rf_path)
     if "p_binder" not in rf_designs.columns:

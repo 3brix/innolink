@@ -1,26 +1,14 @@
 """
-Filter designs (with a reported funnel) -- the design FILTER STAGE.
-
-Two screens, reported as a cumulative funnel rather than a single baked-in cutoff:
-  - quality_filter (analysis.composite)  -- basic confidence QUALITY screen (S1);
-  - apply_gates (analysis.feasibility)   -- literature DEVELOPABILITY/ENERGY gates (S2).
+Filter designs by: 
+  - quality_filter (analysis.composite)  --> basic confidence QUALITY screen (S1);
+  - apply_gates (analysis.feasibility)   --> custom / literature developability, energy, error gates (S2).
 
   S0  all designs
   S1  + quality screen        (config.analysis.QUALITY_THRESHOLDS)
   S2  + developability gates  (literature values, analysis.feasibility.DEFAULT_GATES)
 
-On the labelled benchmark (eval.csv) each stage reports precision (fraction of kept that
-are binders), recall (fraction of all binders kept) and N-kept; on the unlabelled designs
-(design.csv) it reports N-retained plus per-row pass flags.
-
-Developability/energy gates stay LITERATURE-based, because these metrics do not separate
-binders in the benchmark. There is deliberately NO data-derived confidence/interface gate
-here: those confidence metrics (ipTM, pLDDT, PAE, ...) are already inputs to the composite
-and Random Forest scoring, so gating on them again would double-count the same signal.
-Feasibility (developability/energy) is the axis this stage screens; binding-likelihood is
-handled by the rankers, and the two are combined in run_consensus, whose shortlist is made
-filter-aware by joining this stage's per-design pass flags. Filtering is NOT moved before
-ranking; the full ranking and this funnel stay separate outputs.
+On the labelled benchmark (eval.csv) each stage reports precision, recall and N-kept.
+On the unlabelled designs (design.csv) it reports N-retained plus per-row pass flags.
 
 Outputs (under EVALUATION_DIR/<dataset>/filter/):
   filter_funnel_eval.csv    per-stage precision/recall/N on the benchmark
@@ -48,11 +36,13 @@ logger = logging.getLogger(__name__)
 
 
 def developability_pass(df: pd.DataFrame):
-    """Apply literature developability gates per model.
+    """
+    Apply developability gates per model.
     Returns (pass_all, unknown_any, models_used, flagged):
-      pass_all    = feasible on every model that has gate columns;
-      unknown_any = any of those verdicts rests on a missing value;
-      flagged     = the full per-gate flags table (reused for the feasibility summary)."""
+      pass_all    = feasible on every model that has gate columns,
+      unknown_any = any of those verdicts rests on a missing value,
+      flagged     = the full per-gate flags table.
+    """
     flagged = apply_gates(df, DEFAULT_GATES, MODELS)
     feas_cols = [f"{m}_feasible" for m in MODELS if f"{m}_feasible" in flagged.columns]
     unk_cols = [f"{m}_feasible_unknown" for m in MODELS if f"{m}_feasible_unknown" in flagged.columns]
@@ -77,7 +67,7 @@ def eval_stage(kept: pd.Series, y_true: pd.Series) -> dict:
             "recall": round(tp / n_pos, 4) if n_pos else np.nan}
 
 
-# ------------------------------------------------------------------ load
+# load
 base = RAW_DATA_DIR / cfg.name
 output_dir = EVALUATION_DIR / cfg.name / "filter"
 output_dir.mkdir(parents=True, exist_ok=True)
@@ -135,13 +125,13 @@ if design_df is not None and len(design_df):
     diag["quality_ok"] = (q["quality_flag"] == "ok").values
     diag["developability_pass"] = dev_ok.values
     diag["developability_unknown"] = dev_unknown.values
-    # passes_filter = the two screens combined; consumed by run_consensus for the filter-aware shortlist
+    # passes_filter = the two screens combined.  Consumed by run_consensus for the filter-aware shortlist
     diag["passes_filter"] = diag["quality_ok"] & diag["developability_pass"]
     keep = [c for c in ("sample", "dataset", "binder") if c in diag.columns]
     diag[keep + ["quality_ok", "developability_pass", "developability_unknown", "passes_filter"]] \
         .to_csv(output_dir / "filtered_designs.csv", index=False)
 
-    # per-model developability gate summary (folded in from the former run_feasibility.py)
+    # per-model developability gate summary
     feasibility_summary(dev_flags, MODELS).to_csv(output_dir / "feasibility_summary.csv", index=False)
 
 print(f"[{cfg.name}] filter report -> {output_dir}")

@@ -4,7 +4,7 @@ import pandas as pd
 
 
 def _fail_mask(series: pd.Series, gate: dict) -> pd.Series:
-    """True where the value FAILS the gate. NaN -> False (passes)."""
+    """True where the value fails the gate. NaN -> False (passes)."""
     if gate["kind"] == "max":
         m = series > gate["value"]
     elif gate["kind"] == "min":
@@ -18,21 +18,15 @@ def _fail_mask(series: pd.Series, gate: dict) -> pd.Series:
 
 def apply_gates(df: pd.DataFrame, gates: list[dict], models: list[str]) -> pd.DataFrame:
     """
-    Literature DEVELOPABILITY/ENERGY gates -- one of three distinct "filter" concepts:
-    quality_filter (confidence screen), apply_gates (here), and run_filter.py (the design
-    FILTER STAGE that combines both with a data-derived confidence funnel).
-
     Add, per model with >=1 present gate column:
-      `<model>_fail_<metric>` (bool) for each applied gate,
-      `<model>_feasible`         (bool) = passes ALL its applied gates, and
-      `<model>_feasible_unknown` (bool) = the verdict rests on >=1 MISSING gate value.
-    Returns a copy of df with those columns added. Models/metrics whose columns are
+      '<model>_fail_<metric>'       (bool) for each applied gate,
+      '<model>_feasible'            (bool) = passes all applied gates,
+      '<model>_feasible_unknown'    (bool) = the verdict rests on >=1 missing gate.
+    Returns a copy of df with those columns added. Models / metrics whose columns are
     absent are skipped (no flag), so nothing crashes on a partial table.
 
-    NaN handling: a missing gate value still counts as a PASS in
-    `_fail_mask` (pass/fail semantics unchanged), but `<model>_feasible_unknown` flags
-    those rows so a "feasible" verdict built on incomplete data is not mistaken for a
-    fully-screened one.
+    NaN handling: a missing gate value still counts as a pass in
+    '_fail_mask', but '<model>_feasible_unknown' flags those rows
     """
     df = df.copy()
     for model in models:
@@ -52,10 +46,7 @@ def apply_gates(df: pd.DataFrame, gates: list[dict], models: list[str]) -> pd.Da
 
 
 def feasibility_summary(flags: pd.DataFrame, models: list[str], group_col: str | None = "dataset") -> pd.DataFrame:
-    """
-    Per model (and per `group_col` if present): n_total, n_feasible, frac_feasible,
-    and the per-gate fail counts. Long format, one row per (group, model).
-    """
+    """Per model / group_col: n_total, n_feasible, frac_feasible, and the per-gate fail counts. Long format, one row per (group, model)."""
     rows = []
     groups = flags.groupby(group_col) if (group_col and group_col in flags.columns) else [("all", flags)]
     for grp, g in groups:

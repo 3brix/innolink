@@ -1,15 +1,14 @@
 """
 Central path configuration.
 
-Every location derives from PROJECT_ROOT, resolved in this order:
+Every location derives from root, resolved in this order:
   1. the PROJECT_ROOT environment variable, if set;
   2. otherwise the repository root (the parent of this config/ directory),
      so the pipeline runs from a fresh checkout with no configuration.
 
-DATA_DIR and RUNS_DIR can each be overridden the same way; by default they sit
-under PROJECT_ROOT. Overrides may also be placed in a .env file at the
-repository root (KEY=VALUE lines). Real environment variables always win over
-the .env file, which only fills in values that are not already set.
+DATA_DIR and RUNS_DIR:by default they sit under PROJECT_ROOT.
+Overrides may also be placed in a .env file at the repository root (KEY=VALUE lines).
+Real environment variables always win over the .env file, which only fills in values that are not already set.
 """
 
 from pathlib import Path
@@ -18,7 +17,7 @@ import os
 
 # Minimal .env support
 def _load_dotenv(env_file: Path) -> None:
-    """Read KEY=VALUE lines from `env_file` into os.environ, without overriding
+    """Read KEY=VALUE lines from 'env_file' into os.environ, without overriding
     variables that are already set in the real environment."""
     if not env_file.is_file():
         return

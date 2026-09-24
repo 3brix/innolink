@@ -1,4 +1,4 @@
-"""Create the 3 base tables for the selected DATASET: merged.csv, eval.csv, design.csv."""
+"""Create the 3 base tables for the selected dataset: merged.csv, eval.csv, design.csv."""
 
 import logging
 

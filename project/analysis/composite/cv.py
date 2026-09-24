@@ -20,9 +20,8 @@ def _aligned_matrix(df: pd.DataFrame, cols: list[str], directions: dict) -> np.n
 
 
 def _lineage_groups(df: pd.DataFrame) -> np.ndarray:
-    """Parent-lineage id = first '_'-token of the sample id (mirrors the RF grouped CV),
-    so mutational-scan variants of one parent never split across folds. Falls back to one
-    group per row (i.e. ungrouped) when there is no 'sample' column."""
+    """Parent-lineage id = first '_'-token of the sample id,
+    Falls back to one group per row (i.e. ungrouped) when there is no 'sample' column."""
     if "sample" in df.columns:
         return df["sample"].astype(str).str.split("_").str[0].to_numpy()
     return np.arange(len(df))
@@ -52,10 +51,9 @@ def best_per_family(prauc: dict[str, float], families: dict) -> list[str]:
 def stability_select(df, y, candidate_cols, directions, families, k=5, seed=42, groups=None) -> list[str]:
     """
     Stability selection with lineage-grouped folds (StratifiedGroupKFold): within each fold,
-    pick the best-in-family metric by PR-AUC, then keep only metrics chosen in a MAJORITY
-    (> n_splits//2) of folds. Grouping by parent lineage keeps mutational-scan variants of one
-    parent off both sides of a split. Falls back to a full in-sample best-per-family when the
-    vote is empty or grouped CV isn't possible (tiny data).
+    pick the best-in-family metric by PR-AUC, then keep only metrics chosen in a majority
+    (> n_splits//2) of folds. Falls back to a full in-sample best-per-family when the
+    vote is empty or grouped CV isn't possible.
     """
     y = np.asarray(y)
     if groups is None:
@@ -72,7 +70,7 @@ def stability_select(df, y, candidate_cols, directions, families, k=5, seed=42, 
             for m in best_per_family(prauc, families):
                 votes[m] += 1
     chosen = sorted(m for m, v in votes.items() if v > n_splits // 2)
-    if not chosen:  # degenerate (tiny data) -> fall back to a single in-sample best-per-family
+    if not chosen:  # degenerate -> fall back to a single in-sample best-per-family
         A = _aligned_matrix(df, candidate_cols, directions)
         prauc = {c: average_precision_score(y, A[:, i]) for i, c in enumerate(candidate_cols)}
         chosen = sorted(best_per_family(prauc, families))
@@ -83,9 +81,9 @@ def cv_composite_scores(df, y, cols, directions, method="consensus", k=5, seed=4
     """
     Out-of-fold composite score per sample, using lineage-grouped folds (StratifiedGroupKFold)
     so mutational-scan variants of one parent never split across train/test. Standardization
-    (and PR-AUC weights for method='weighted') are fit on the TRAIN folds only, so no label
-    leaks into the held-out score. NaNs are ignored per row (weights renormalised over present
-    columns). Returns all-NaN when grouped CV isn't possible (too few groups/samples).
+    (and PR-AUC weights for method='weighted') are fit on the train folds only, so no label
+    leaks into the held-out score. NaNs are ignored per row. 
+    Returns all-NaN when grouped CV isn't possible (too few groups/samples).
     """
     y = np.asarray(y)
     A = _aligned_matrix(df, cols, directions)
@@ -119,17 +117,14 @@ def evaluate_composites(df, y, candidate_cols, directions, families,
                         k=5, seed=42, selection="stability", fixed_cols=None,
                         pct=0.10) -> tuple[pd.DataFrame, list[str]]:
     """
-    Honest composite comparison with lineage-grouped out-of-fold CV. Returns (table,
-    selected_cols); table has one row per method: composite_consensus (primary),
-    composite_weighted (secondary), best_single (baseline) -- with out-of-fold AUROC, PR-AUC,
-    and precision@pct (POINT ESTIMATES; see the PR-AUC "To Test" note in evaluation/metrics.py).
-
-    Folds are grouped by parent lineage (StratifiedGroupKFold), matching the RF, so
-    mutational-scan variants of one parent never split across train/test.
+    Composite comparison with lineage-grouped out-of-fold CV. Returns (table,
+    selected_cols). Table has one row per method: composite_consensus (primary),
+    composite_weighted (secondary), best_single (baseline) with out-of-fold AUROC, PR-AUC, and precision@pct
+    Folds are grouped by parent lineage (StratifiedGroupKFold)
+    Single-metric AUROC involves no fitted parameters (optimistic)
     selection : 'stability' (default; majority best-in-family across grouped folds) or 'fixed'
-                (use `fixed_cols`, a domain-chosen metric set).
-    Single-metric AUROC involves no fitted parameters, so it is reported on the full labeled
-    set; only the CHOICE of the top single is mildly optimistic (an upper-bound baseline).
+                (use 'fixed_cols', a domain-chosen metric set).
+
     """
     y = np.asarray(y)
     groups = _lineage_groups(df)
@@ -144,8 +139,8 @@ def evaluate_composites(df, y, candidate_cols, directions, families,
         raise ValueError("no metrics selected for the composite")
 
     def _rank_cols(ys, ss):
-        # ys/ss are OUT-OF-FOLD scores for composites (leakage-safe); precision@pct + PR-AUC,
-        # reported as point estimates.
+        # ys/ss are OUT-OF-FOLD scores for composites (leakage-safe)
+        # precision@pct + PR-AUC, reported as point estimates.
         pak, npak, kused = precision_at_percent(ys, ss, pct)
         return {"prevalence": round(float((ys == 1).mean()), 4), "pct": pct,
                 "precision_at_pct": round(pak, 4) if pak == pak else np.nan,
@@ -157,7 +152,7 @@ def evaluate_composites(df, y, candidate_cols, directions, families,
     for method in ("consensus", "weighted"):
         s = cv_composite_scores(df, y, cols, directions, method, k, seed, groups=groups)
         m = ~np.isnan(s)
-        if m.sum() == 0 or np.unique(y[m]).size < 2:     # grouped CV degenerate -> no honest row
+        if m.sum() == 0 or np.unique(y[m]).size < 2:     # grouped CV degenerate
             continue
         rows.append({"model": f"composite_{method}",
                      "auroc": round(float(roc_auc_score(y[m], s[m])), 4),
@@ -165,7 +160,7 @@ def evaluate_composites(df, y, candidate_cols, directions, families,
                      **_rank_cols(y[m], s[m]),
                      "n_metrics": len(cols), "evaluation": eval_label})
 
-    # best single metric baseline (aligned; no fitting -> full-set AUROC is unbiased per metric)
+    # best single metric baseline (aligned, no fitting -> full-set AUROC is unbiased per metric)
     A = _aligned_matrix(df, candidate_cols, directions)
     singles = {c: roc_auc_score(y, A[:, i]) for i, c in enumerate(candidate_cols)}
     top = max(singles, key=singles.get)
