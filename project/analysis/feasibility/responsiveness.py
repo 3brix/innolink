@@ -5,6 +5,8 @@ import pandas as pd
 from scipy.stats import mannwhitneyu
 from preprocessing.align import get_direction
 
+# not a stage, decide on it later: the responsiveness / consistency analysis is a useful report, but not a gate. It is used to decide which metrics are trustworthy enough to use as gates in the composite metric.
+
 
 def _pos_neg(df: pd.DataFrame, col: str, directions: dict):
     """Direction-aligned (positives, negatives) for one metric, or None if unusable."""

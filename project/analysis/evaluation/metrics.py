@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import roc_auc_score, precision_recall_curve, average_precision_score  # F1/MCC dropped from the ranking benchmark; re-add f1_score, matthews_corrcoef to restore
+from sklearn.metrics import roc_auc_score, precision_recall_curve, average_precision_score, f1_score, matthews_corrcoef
 from preprocessing.metric_meta import get_direction, get_family, load_families as load_metric_families  # re-exported via analysis.evaluation.__init__
 from analysis.evaluation.ranking_metrics import precision_at_percent
 from config.analysis import PRECISION_AT_PERCENT
@@ -43,16 +43,16 @@ def _pr_counts(aligned, y, cutoff):
 
 
 def select_threshold(y_true, aligned_scores, precision_target: float, n_min: int) -> dict:
-    """Choose a cutoff on ALIGNED scores (higher = better) for precision-first filtering.
+    """Choose a cutoff on aligned scores for precision-first filtering.
 
-    Rule: among candidate cutoffs (the observed score values) that reach
-    precision >= `precision_target` AND retain >= `n_min` samples, pick the one with the
+    Rule: among candidate cutoffs that reach
+    precision >= 'precision_target' and retain >= 'n_min' samples, pick the one with the
     HIGHEST recall (i.e. the most-retaining cutoff that still meets the target).
-    Fallbacks (reported via `status`):
+    Fallbacks (reported via 'status'):
       - "ok"              : a cutoff met both constraints.
-      - "no_target"       : none met the precision target with n_min retained; the
+      - "no_target"       : none met the precision target with n_min retained: the
                             highest-precision cutoff among those with >= n_min is used.
-      - "no_nmin"         : fewer than n_min samples exist; the highest-precision cutoff
+      - "no_nmin"         : fewer than n_min samples exist: the highest-precision cutoff
                             overall is used.
     Returns {threshold(aligned), precision, recall, n_pass, n_pos_retained, status}.
     Missing scores are dropped (they never pass).
@@ -89,9 +89,9 @@ def select_threshold(y_true, aligned_scores, precision_target: float, n_min: int
 
 def calculate_all_metrics(df: pd.DataFrame, metrics: list[str], directions: dict[str, int],
                           pct: float = PRECISION_AT_PERCENT) -> pd.DataFrame:
-    """Per-metric benchmark: ROC-AUC, PR-AUC (primary), precision@`pct` (default 10%),
+    """Per-metric benchmark: ROC-AUC, PR-AUC (primary), precision@pct (default 10%),
     and F1/precision/recall/MCC at the PR-curve-optimal threshold. All in-sample on the
-    benchmark (no fitting) and reported as POINT ESTIMATES (see the PR-AUC "To Test" note)."""
+    benchmark, reported as point estimates."""
     results = []
 
     for col in metrics:
@@ -110,14 +110,12 @@ def calculate_all_metrics(df: pd.DataFrame, metrics: list[str], directions: dict
 
             raw_roc = roc_auc_score(y_true, y_raw)
             aligned_roc = roc_auc_score(y_true, aligned)
-            # To Test: lineage-grouped (cluster) bootstrap CI for PR-AUC -- resample parent
+            # TO TEST: lineage-grouped (cluster) bootstrap CI for PR-AUC --> resample parent
             # lineages (sample.split('_')[0]), not rows, since DMS variants are non-independent
-            # and an i.i.d. bootstrap understates the variance on this small, clustered benchmark.
             pr_auc = average_precision_score(y_true, aligned)
 
-            # ranking-benchmark quantities: precision@pct (application-oriented) + PR-AUC,
-            # reported as point estimates. In-sample on the benchmark (no fitting), so they are
-            # optimistic; the composite/RF use out-of-fold scores instead.
+            # ranking-benchmark quantities: precision@pct (application-oriented) + PR-AUC --> optimistic
+            # plus the precision/recall, F1-optimal threshold (for reference, not used in the ranking task)
             prevalence = round(float((y_true == 1).mean()), 4)
             p_at_pct, n_pos_at_pct, k_used = precision_at_percent(y_true, aligned, pct)
             _rank_cols = {
@@ -145,8 +143,6 @@ def calculate_all_metrics(df: pd.DataFrame, metrics: list[str], directions: dict
             # F1 and MCC are intentionally NOT reported for the single-metric ranking benchmark:
             # both are threshold-dependent at this in-sample F1-optimal point (which the ranking
             # task never uses), and MCC's imbalance-robustness is moot on the balanced benchmark.
-            # MCC still lives in the RF stage (mcc@0.5 on out-of-fold predictions). The F1-optimal
-            # threshold itself is kept below as a downstream reference cutoff (opt_threshold_raw).
             results.append({
                 "metric": col,
                 "raw_roc": round(raw_roc, 4),
@@ -155,7 +151,9 @@ def calculate_all_metrics(df: pd.DataFrame, metrics: list[str], directions: dict
                 "precision": round(float(precisions[:-1][best]), 4),
                 "recall": round(float(recalls[:-1][best]), 4),
                 "opt_threshold": round(float(best_thr), 4),
-                "opt_threshold_raw": round(float(best_thr * direction), 4),
+                #"f1": round(float(f1_scores[best]), 4),
+                #"mcc": round(float(matthews_corrcoef(y_true, aligned >= best_thr
+                #"opt_threshold_raw": round(float(best_thr * direction), 4),
                 "direction": direction,
                 "note": "",
             })

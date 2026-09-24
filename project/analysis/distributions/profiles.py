@@ -29,7 +29,6 @@ Notes
 """
 from __future__ import annotations
 
-import warnings
 
 import numpy as np
 import pandas as pd
@@ -38,13 +37,13 @@ import seaborn as sns
 import yaml
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import Patch
-from scipy.cluster.hierarchy import linkage, leaves_list,   fcluster
+from scipy.cluster.hierarchy import linkage, fcluster
 from scipy.spatial.distance import pdist
 from sklearn.metrics import adjusted_rand_score
 
 from analysis.distributions.wide import get_numeric_metrics, add_binder_type
 from config.analysis import COLORS_MAP
-from config.paths import METRIC_YAML, THRESHOLDS_YAML
+from config.paths import METRIC_YAML
 
 CLASS_ORDER = ["Binder", "Non-Binder", "Mutant+", "Mutant-", "Target Shuffle", "Design", "Unknown"]
 
@@ -102,7 +101,7 @@ def plot_sample_clustermap(df: pd.DataFrame, metrics: list[str] | None = None,
     cat_map = {m: d.get("category", "?") for m, d in yaml.safe_load(open(yaml_path))["metrics"].items()}
 
     if col_order == "cluster":
-        from scipy.cluster.hierarchy import linkage, leaves_list
+        from scipy.cluster.hierarchy import linkage
         from scipy.spatial.distance import pdist
         M = M.iloc[:, leaves_list(linkage(pdist(M.T.fillna(0.0).values), "average"))]
     elif col_order in ("binder_type", "score"):
@@ -118,7 +117,7 @@ def plot_sample_clustermap(df: pd.DataFrame, metrics: list[str] | None = None,
     bt = bt.reindex(M.columns)
 
     if row_order == "cluster":
-        from scipy.cluster.hierarchy import linkage, leaves_list
+        from scipy.cluster.hierarchy import linkage
         from scipy.spatial.distance import pdist
         M = M.iloc[leaves_list(linkage(pdist(M.fillna(0.0).values), "average"))]
     elif row_order == "category":
@@ -179,11 +178,6 @@ def plot_sample_clustermap(df: pd.DataFrame, metrics: list[str] | None = None,
 
 
 # filter heatmap
-
-# load_thresholds now lives in preprocessing.metric_meta (canonical); re-exported here.
-from preprocessing.metric_meta import load_thresholds
-
-
 def plot_filter_heatmap(df: pd.DataFrame, thresholds: dict, metrics: list[str] | None = None,
                         yaml_path=METRIC_YAML, col_order: str = "binder_type",
                         mode: str = "binary", clip: float = 3.0, sample_labels: bool = True):

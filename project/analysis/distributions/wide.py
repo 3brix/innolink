@@ -5,7 +5,6 @@ Everything here operates on the wide, one-row-per-sample merged table: numeric-m
 from __future__ import annotations
 
 import pandas as pd
-from preprocessing.metadata import add_binder_type
 from preprocessing.metric_meta import get_metric_columns
 
 
