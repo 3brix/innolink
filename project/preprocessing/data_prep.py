@@ -57,7 +57,7 @@ def aggregate_predictions(df: pd.DataFrame) -> pd.DataFrame:
     """Aggregate predictions to one row per sample (numeric mean, other types first)."""
     numeric_cols = df.select_dtypes(include="number").columns
     other_cols = [c for c in df.columns if c not in numeric_cols and c != "sample"]
-    agg = {c: "mean" for c in numeric_cols}
+    agg = {c: "max" for c in numeric_cols} # was mean first decided to change it to max or weighted mean
     agg.update({c: "first" for c in other_cols})
     return df.groupby("sample").agg(agg).copy().reset_index()
 

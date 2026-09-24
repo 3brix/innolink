@@ -1,17 +1,17 @@
 """
 Sample-level & outlier views over the scored metrics.
 
-Pure-viz layer (like analysis.distributions.plots): each function takes an
-already-loaded dataframe and returns a matplotlib Figure / seaborn ClusterGrid.
+Pure-viz layer each function takes an already-loaded dataframe and 
+returns a matplotlib Figure / seaborn ClusterGrid.
 Loading + scaling live in the driver notebook (profiles_plots.ipynb).
 
 Figures
 -------
-plot_sample_clustermap  sample x metric heatmap of STANDARDIZED, aligned values,
+plot_sample_clustermap  sample x metric heatmap of satndardized, aligned values,
                         both axes clustered, binder_type colour strip. Expects a
                         scaled+aligned table (e.g. merged_scaled_aligned).
 plot_filter_heatmap     same layout, pass/fail vs a per-metric threshold
-                        (default = the metric's median = PLACEHOLDER) + pass-rate strip.
+                        (default = the metric's median) + pass-rate strip.
 plot_sample_profiles    a few selected samples (top/median/bottom by mean score)
                         across metric FAMILIES, over each group's IQR band.
 plot_per_dataset        top separating metrics (rows) x dataset (cols), box+strip by

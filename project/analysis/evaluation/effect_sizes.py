@@ -56,7 +56,7 @@ def cliffs_delta(df: pd.DataFrame, metrics: list[str], directions: dict[str, int
     out = pd.DataFrame(rows)
     return out.sort_values("cliffs_delta", key=abs, ascending=False) if "cliffs_delta" in out.columns else out
 
-
+# drop function
 def cohens_d(df: pd.DataFrame, metrics: list[str], directions: dict[str, int]) -> pd.DataFrame:
     """
     Cohen's d per metric (pooled-SD standardized mean difference).

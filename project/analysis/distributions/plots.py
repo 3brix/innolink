@@ -31,7 +31,7 @@ def plot_metric_separability(long_df, model_groups, output_dir, colors_map, show
     Plot metric separability across binder classes (long table).
     For each model group: one subplot per metric, a stripplot of individual samples over a boxplot of the distribution, colored by source.
     """
-    x_order = ['Binder', 'Non-Binder', 'Mutant+', 'Mutant-', 'Design',]  # 'Target Shuffle', 
+    x_order = ["Binder", "Non-Binder", "Mutant+", "Mutant-", "Design"]  # 'Target Shuffle', 
 
     for model, metrics in model_groups.items():
         model_df = long_df[long_df["metric"].isin(metrics)].copy()
@@ -75,8 +75,6 @@ def plot_metric_separability(long_df, model_groups, output_dir, colors_map, show
             fig.delaxes(axes[j])
 
         import matplotlib.patches as mpatches
-
-        # after the plotting loop, before tight_layout()
 
         handles = [
             mpatches.Patch(color=color, label=label)

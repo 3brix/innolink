@@ -1,5 +1,6 @@
 # metric_directions.yaml
-# ======================
+
+# TO DO: drop scale!
 # Reorganized by orthogonal redundancy groups to prevent collinearity hijacking.
 #
 # direction: +1  ->  higher = better binder  (iptm, plddt, confidence...)

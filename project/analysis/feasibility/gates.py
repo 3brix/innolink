@@ -7,6 +7,3 @@ DEFAULT_GATES = [
     {"metric": "surface_hydrophobicity",       "kind": "band", "bounds": (0.25, 0.40)},
 ]
 
-# NOTE: hydrophobic_sasa_ratio = hydrophobic_sasa / ideal_surface is NOT emitted by
-# calc_sap.py yet (only hydrophobic_sasa is). Until that column exists this gate is
-# auto-skipped. Add it at SAP-compute time, or drop this gate.

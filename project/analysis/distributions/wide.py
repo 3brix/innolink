@@ -11,9 +11,8 @@ from preprocessing.metric_meta import get_metric_columns
 def get_numeric_metrics(df: pd.DataFrame) -> list[str]:
     """Numeric prediction-metric columns (excludes meta/label/experimental columns).
 
-    Alias for the analysis layer -- the single implementation lives in
-    ``preprocessing.metric_meta.get_metric_columns`` (the lower layer), so preprocessing
-    and analysis can't drift apart.
+    Alias for the analysis layer -- the single implementation lives in preprocessing.metric_meta.get_metric_columns,
+    so preprocessingand analysis can't drift apart.
     """
     return get_metric_columns(df)
 

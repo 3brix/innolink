@@ -48,7 +48,7 @@ Override any of these with environment variables, or by copying `.env.example` t
 | `RUNS_DIR` | where per-run provenance is written | `<PROJECT_ROOT>/runs` |
 | `EXTERNAL_DATA_ROOT` | root holding the raw prediction CSVs | `/scicore/home/schwede/barta0000` |
 | `DATASET` | which dataset or pooled set to run | `rf` |
-| `SCALER` | `robust` or `standard` (used by `run_scale.py`) | `robust` |
+| `SCALER` | `standard` or `robust` (used by `run_scale.py`) | `standard` |
 
 `DATASET` picks either one dataset or a pooled **analysis set** (several datasets
 combined). The datasets and sets are defined in `config/datasets.py` and
@@ -103,8 +103,8 @@ PYTHONPATH=. python run_profiling.py     # 4b. PROFILING: composition, class dis
 PYTHONPATH=. python run_evaluation.py    # 5. BENCHMARK: which metrics separate binders
 PYTHONPATH=. python run_thresholds.py    # 6. REPORT-ONLY: data-derived vs literature cutoffs
 PYTHONPATH=. python run_composite.py     # 7. leakage-safe composite metric development
-PYTHONPATH=. python run_filter.py        # 9. filter designs (literature dev gates + confidence funnel)
-PYTHONPATH=. python run_consensus.py     # 10. RF (primary) + composite -> shortlist + disagreement
+PYTHONPATH=. python run_filter.py        # 8. filter designs (feasibility: quality + literature developability gates)
+PYTHONPATH=. python run_consensus.py     # 9. RF (primary) + composite -> filter-aware shortlist + disagreement
 ```
 
 Or run the whole thing in order with the orchestrator (fail-fast, one shared run
@@ -143,8 +143,9 @@ Notes on the metric set and reporting:
   (`config.analysis.FILTER_ONLY_CATEGORIES`, enforced in `get_metric_columns`).
 - **`mol_type`.** Each sample carries a `nanobody`/`antibody` label (from the dataset
   config), so benchmarks are reported pooled, per-dataset, and per-mol_type.
-- **MCC** is reported as a supplementary balanced measure in `rankings.csv` (per metric,
-  at the F1-optimal threshold) and in the RF CV metrics (`mcc@0.5`).
+- **MCC** is reported only in the RF CV metrics (`mcc@0.5`, on out-of-fold predictions).
+  It is deliberately not a single-metric benchmark column: at an in-sample F1-optimal
+  threshold on a balanced benchmark it adds nothing over PR-AUC / precision@10%.
 - **Thresholds.** `run_thresholds.py` reports the F1-optimal cutoff (reference), a
   precision-target + N-floor operating point (`PRECISION_TARGET`, `N_MIN`; configurable),
   and a `threshold_sweep.csv` for choosing those parameters. Threshold selection is
@@ -239,11 +240,11 @@ or run one stage: `PYTHONPATH=. python run_<stage>.py`.
 
 **Understanding the results.** *Filtering* (`.../filter/`): `filter_funnel_eval.csv`
 gives precision/recall/N at each funnel step on labelled data (quality → developability
-gates → confidence), `filter_funnel_design.csv` the N retained on designs,
+gates), `filter_funnel_design.csv` the N retained on designs,
 `filtered_designs.csv` the per-design pass flags, `feasibility_summary.csv` the
 developability gate fails per model. *Ranking* (`.../consensus/`): `shortlist.csv` is the
-top-k designs by the **RF** (primary), each flagged `consensus` (composite agrees) or
-`primary_only`; `disagreements.csv` lists where the two methods disagree; `agreement.txt`
+top-k designs by the **RF** (primary) among those that PASS the feasibility filter
+(filter-aware), each flagged `consensus` (composite agrees) or `primary_only`; `disagreements.csv` lists where the two methods disagree; `agreement.txt`
 has the Spearman/Kendall agreement. The product-composite is complementary — there is no
 blended score.
 
@@ -251,7 +252,7 @@ blended score.
 `config/metric_data.yaml` (`direction`, `family`, `category`, `scale`); direction
 alignment is `preprocessing/align.py` (via `metric_meta.get_direction`); it is selected
 as a feature by `metric_meta.get_metric_columns` (interface, not filtering-only); scored
-in `run_evaluation.py` → `calculate_all_metrics` → a row in `rankings.csv` (pr_auc, f1,
-mcc, opt_threshold); its thresholds are in `thresholds/threshold_report.csv` and
+in `run_evaluation.py` → `calculate_all_metrics` → a row in `rankings.csv` (pr_auc,
+precision_at_pct, aligned_roc, opt_threshold_raw); its thresholds are in `thresholds/threshold_report.csv` and
 `threshold_sweep.csv`; its literature gate is `config/thresholds.yaml`; and it appears as
 an RF feature in `ranking/rf_importances.csv`.

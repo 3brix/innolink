@@ -1,13 +1,10 @@
 """
 Lightweight profiling summaries (tables, not plots).
 
-Reusable functions that produce the reproducible profiling tables written by
-run_profiling.py. The figure notebooks import these too, so the computation lives
-here once (no duplication between notebook and script).
+Reusable functions that produce the reproducible profiling tables written by run_profiling.py. 
 
-All functions gracefully group by whichever of `dataset` / `mol_type` columns are
-present, so they work for a single dataset and for pooled sets, and pick up
-`mol_type` automatically once it is added.
+All functions gracefully group by whichever of dataset / mol_type columns are present,
+ so they work for a single dataset and for pooled sets, and pick up 'mol_type' automatically.
 """
 
 from __future__ import annotations
@@ -23,9 +20,10 @@ def _present(df: pd.DataFrame, cols) -> list[str]:
 
 
 def class_distribution(df: pd.DataFrame, by=("dataset", "mol_type")) -> pd.DataFrame:
-    """Counts of `binder_type` overall and grouped by whichever `by` columns exist.
-    Derives `binder_type` if absent (via add_binder_type) when `type` is available,
-    else falls back to counting the raw `binder` label."""
+    """
+    Counts of 'binder_type' overall. Derives it when absent and 'type' is available,
+    else falls back to counting the raw 'binder' label.
+    """
     if "binder_type" not in df.columns:
         if "type" in df.columns and "binder" in df.columns:
             from preprocessing.metadata import add_binder_type
@@ -45,7 +43,7 @@ def class_distribution(df: pd.DataFrame, by=("dataset", "mol_type")) -> pd.DataF
 
 
 def composition(df: pd.DataFrame, by=("dataset", "mol_type")) -> pd.DataFrame:
-    """Per (dataset[/mol_type]) sample counts and positive-class prevalence."""
+    """Per (dataset / mol_type sample counts and positive-class prevalence."""
     def _agg(sub: pd.DataFrame) -> pd.Series:
         b = pd.to_numeric(sub["binder"], errors="coerce")
         n_bind = int((b == 1).sum())
@@ -65,7 +63,7 @@ def composition(df: pd.DataFrame, by=("dataset", "mol_type")) -> pd.DataFrame:
 
 
 def missingness_summary(df: pd.DataFrame, group_col: str = "dataset") -> pd.DataFrame:
-    """Per-metric missing fraction overall, plus per-`group_col` columns if present."""
+    """Per-metric missing fraction overall, plus per-'group_col' columns if present."""
     metrics = get_metric_columns(df)
     out = (df[metrics].isna().mean().round(4)
            .rename("missing_frac_overall").rename_axis("metric").reset_index())
@@ -76,7 +74,7 @@ def missingness_summary(df: pd.DataFrame, group_col: str = "dataset") -> pd.Data
         out = out.merge(per.reset_index().rename(columns={"index": "metric"}), on="metric", how="left")
     return out
 
-
+# TO DO: migrate function (?)
 def metric_ranges(df: pd.DataFrame) -> pd.DataFrame:
     """Per-metric range/summary (min/max/mean/std/median + missing), via QC's describe."""
     from analysis.distributions.qc import metric_description

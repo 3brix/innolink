@@ -1,7 +1,7 @@
 """
 Create the sacled tables for the selected dataset.
 
-The scaler is chosen by the SCALER env var ('standard' or 'robust', default 'robust'); 
+The scaler is chosen by the scaler env var ('standard' or 'robust', default 'robust'); 
 parameters are fit per file, so for a pooled set the fit is on the pool. Run the prep / normalize / align steps first.
 """
 
@@ -21,10 +21,8 @@ METHOD = os.environ.get("SCALER", "standard")
 
 # source-suffix -> scaled-output-suffix
 VARIANTS = {
-    "": "_scaled",
+    #"": "_scaled",
     "_aligned": "_scaled_aligned",
-#    "_normalized": "_normalized_scaled",
-#    "_normalized_aligned": "_normalized_scaled_aligned",
 }
 
 base = RAW_DATA_DIR / cfg.name

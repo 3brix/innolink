@@ -7,10 +7,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------
-# Chai array columns
-# ---------------------------------------------------------------------
 
+# Chai array columns
 CHAI_PTM_COLUMNS = [
     "chai_unconstrained_per_chain_ptm",
     "chai_constrained_per_chain_ptm",
@@ -27,10 +25,8 @@ CHAI_ARRAY_COLUMNS = (
 )
 
 
-# ---------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------
 
+# Helpers
 def parse_array(value):
     """Parse a stringified Chai array into a numpy array."""
 
@@ -55,12 +51,8 @@ def extract_ptm(arr):
 def extract_pair_iptm(matrix):
     """
     Extract interface iPTM.
-
-    Two-chain complexes:
-        minimum(A,B)
-
-    Three-chain complexes:
-        minimum(A,C,B,C)
+    Two-chain complexes: minimum(A,B)
+    Three-chain complexes: minimum(A,C,B,C)
     """
 
     if matrix is None or matrix.ndim != 2:
@@ -77,14 +69,10 @@ def extract_pair_iptm(matrix):
     return np.nan
 
 
-# ---------------------------------------------------------------------
-# Feature extraction
-# ---------------------------------------------------------------------
 
+# Feature extraction
 def extract_chai_metrics(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Convert raw Chai array columns into numeric features.
-    """
+    """Convert raw Chai array columns into numeric features."""
 
     available = [
         c for c in CHAI_ARRAY_COLUMNS
@@ -135,10 +123,8 @@ def extract_chai_metrics(df: pd.DataFrame) -> pd.DataFrame:
     ].copy()
 
 
-# ---------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------
 
+# Public API
 def process_chai_metrics(df):
 
     chai_numeric = extract_chai_metrics(df)
