@@ -1,15 +1,10 @@
-"""
-Dataset-specific configuration.
-
-Select via the DATASET environment variable. It accepts either a single dataset
-or a pooled analysis set (from config.analysis.ANALYSIS_SETS):
+"""Dataset configuration. DATASET selects one dataset or a pooled set from ANALYSIS_SETS:
 
     export DATASET=alphaseq     # one dataset
-    export DATASET=antibody     # a pooled set (alphaseq + snir)
+    export DATASET=antibody     # a pooled set
 
-The selection is available as 'cfg'. A set cfg has members populated and
-'is_set == True'; downstream runners only use 'cfg.name' and work the same
-either way (a set is materialized as a virtual dataset under RAW_DATA_DIR).
+The selection is 'cfg'. A set has 'members' and 'is_set == True'; runners use only `cfg.name`
+and work the same either way, since a set is materialised as a virtual dataset under RAW_DATA_DIR.
 """
 
 from dataclasses import dataclass
@@ -22,7 +17,7 @@ from config.analysis import ANALYSIS_SETS
 
 # Root for prediction input files.
 EXTERNAL_DATA_ROOT = Path(
-    os.getenv("EXTERNAL_DATA_ROOT", "/scicore/home/schwede/barta0000")
+    os.getenv("EXTERNAL_DATA_ROOT", ".../project/")
 ).expanduser()
 
 
@@ -59,7 +54,10 @@ def make_dataset(
     #ambiguous_target: str | None = None,
     keep_interfaces: set[str] | None = None,
     mol_type: str | None = None,
+    mastertable: str | Path | None = None,
 ) -> DatasetConfig:
+    """`mastertable` defaults to RAW_DATA_DIR/mt_<name>.csv; pass it explicitly when two
+    datasets are different prediction subsets of the SAME samples (e.g. esm0 / esm0_top10)."""
 
     # molecule type defaults to the mastertable strategy (nanobody / antibody)
     if mol_type is None and mastertable_strategy in {"nanobody", "antibody"}:
@@ -68,85 +66,94 @@ def make_dataset(
     return DatasetConfig(
         name=name,
         predictions_path=Path(predictions),
-        mastertable_path=RAW_DATA_DIR / f"mt_{name}.csv",
+        mastertable_path=Path(mastertable) if mastertable else RAW_DATA_DIR / f"mt_{name}.csv",
         mastertable_strategy=mastertable_strategy,
         #ambiguous_target=ambiguous_target,
         keep_interfaces=keep_interfaces,
         mol_type=mol_type,
     )
 
-# ---------------------------------------------------------------------
-# Available datasets
-# ---------------------------------------------------------------------
 
+# Available datasets
 DATASETS = {
 
     "mcmahon": make_dataset(
         name="mcmahon",
-        predictions=EXTERNAL_DATA_ROOT / "project/data/raw/preds_mcmahon.csv",
+        predictions=EXTERNAL_DATA_ROOT / "data/raw/preds_mcmahon.csv",
         mastertable_strategy="nanobody",
         #ambiguous_target="HSA",
     ),
 
     "snir": make_dataset(
         name="snir",
-        predictions=EXTERNAL_DATA_ROOT / "scoring_pipeline/run1/predictions.csv",
+        predictions=EXTERNAL_DATA_ROOT / "data/raw/snir_predictions_with_sap.csv",
         keep_interfaces={"A,C", "B,C"},
         mastertable_strategy="antibody",
     ),
 
     "germinal": make_dataset(
         name="germinal",
-        predictions=EXTERNAL_DATA_ROOT / "project/data/raw/preds_germinal.csv",
+        predictions=EXTERNAL_DATA_ROOT / "data/raw/preds_germinal.csv",
         mastertable_strategy="nanobody",
     ),
 
     "harvey": make_dataset(
         name="harvey",
-        predictions=EXTERNAL_DATA_ROOT / "project/data/raw/preds_harvey.csv",
+        predictions=EXTERNAL_DATA_ROOT / "data/raw/preds_harvey.csv",
         mastertable_strategy="nanobody",
     ),
 
     "peptide": make_dataset(
         name="peptide",
-        predictions=EXTERNAL_DATA_ROOT / "peptide_ds/originals/predictions_with_sap.csv",
+        predictions=EXTERNAL_DATA_ROOT / "data/raw/peptide_predictions_with_sap.csv",
         mastertable_strategy="nanobody",
     ),
 
     "alphaseq": make_dataset(
         name="alphaseq",
-        predictions=EXTERNAL_DATA_ROOT / "alphaseq_ds/predictions_v1.csv",
+        predictions=EXTERNAL_DATA_ROOT / "data/raw/alphaseq_predictions_with_sap.csv",
         mastertable_strategy="antibody",
         keep_interfaces={"A,C", "B,C"},
     ),
     
     "germinal0": make_dataset(
         name="germinal0",
-        predictions=EXTERNAL_DATA_ROOT / "candidates/germinal/germinal0/predictions_with_sap.csv",
+        predictions=EXTERNAL_DATA_ROOT / "data/raw/germinal0_predictions_with_sap.csv",
         mastertable_strategy="nanobody",
     ),
     
+    # esm0 = the full design set that gets RANKED; it needs no developability metrics
     "esm0": make_dataset(
         name="esm0",
-        predictions=EXTERNAL_DATA_ROOT / "candidates/esm/esm0/predictions.csv",
+        predictions=EXTERNAL_DATA_ROOT / "data/raw/esm0_predictions.csv",
+        mastertable_strategy="nanobody",
+    ),
+
+    # esm0_top10 = the 10 RF-selected esm0 designs re-run with developability metrics, to TEST
+    # the filter. Shares mt_esm0.csv. Kept OUT of 'rf' / 'designs': chosen by the RF, so ranking
+    # them with the RF would be circular.
+    "esm0_top10": make_dataset(
+        name="esm0_top10",
+        predictions=EXTERNAL_DATA_ROOT / "data/raw/esm0_top10_predictions_with_sap.csv",
+        mastertable=EXTERNAL_DATA_ROOT / "data/raw/mt_esm0.csv",
         mastertable_strategy="nanobody",
     ),
 
     "top5": make_dataset(
         name="top5",
-        predictions=EXTERNAL_DATA_ROOT / "candidates/top5/predictions_with_sap.csv",
+        predictions=EXTERNAL_DATA_ROOT / "data/raw/top5_predictions_with_sap.csv",
         mastertable_strategy="nanobody",
     ),
 
     "benoit": make_dataset(
         name="benoit",
-        predictions=EXTERNAL_DATA_ROOT / "benoit_ds/originals/predictions.csv",
+        predictions=EXTERNAL_DATA_ROOT / "data/raw/benoit_predictions_with_sap.csv",
         mastertable_strategy="antibody",
     ),
 
     "sabdab_nb": make_dataset(
         name="sabdab_nb",
-        predictions=EXTERNAL_DATA_ROOT / "sabdab/nb/predictions_with_sap.csv",
+        predictions=EXTERNAL_DATA_ROOT / "data/raw/sabdab_predictions_with_sap.csv",
         mastertable_strategy="nanobody",
     ),
 

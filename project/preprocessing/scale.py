@@ -1,17 +1,8 @@
-"""
-Two methods:
+"""Per-column scaling: 'standard' (mean/std) or 'robust' (median/IQR).
 
-  standard : (x - mean)   / std   (sklearn StandardScaler; unit variance)
-  robust   : (x - median) / IQR   (sklearn RobustScaler; outlier / skew resistant)
-
-Both are affine per column -> monotonic, so per-metric rankings are unchanged;
-scaling only changes cross-metric commensurability. NaNs are ignored on fit and
-preserved on transform; a zero-variance / zero-IQR column maps to all-zeros.
-Meta columns pass through untouched.
-
-Scaling is dataset-dependent, so for a pooled set fit on the pool. 
-It composes with align/normalize by scaling the corresponding variant table; 
-align and any of these scalers commute up to sign, so `*_scaled_aligned` is the same whichever order it is built.
+Both are affine per column, so per-metric rankings are unchanged -- only cross-metric
+commensurability. NaNs are ignored on fit and preserved on transform; a zero-variance column
+maps to all-zeros. Meta columns pass through. Fit on the pool for a pooled set.
 """
 
 
@@ -22,18 +13,34 @@ from sklearn.preprocessing import StandardScaler, RobustScaler
 
 from preprocessing.metric_meta import get_metric_columns
 
-SCALERS = {"standard": StandardScaler, "robust": RobustScaler}
+# in final pipeline StandardScaler is used (RobustScaler retained as alternative)
 
+SCALERS = {"standard": StandardScaler, "robust": RobustScaler}  
+def fit_scaler(reference: pd.DataFrame, metrics: list[str], method: str = "standard"):
+    """Fit one scaler on the reference table (normally merged_aligned.csv).
 
-def scale_metrics(df: pd.DataFrame, metrics: list[str], method: str = "standard") -> pd.DataFrame:
-    """Standardize the listed metric columns by `method` ('standard' | 'robust')."""
+    One shared fit is what makes merged / eval / design comparable; see CLAUDE.md on the
+    scaler default."""
     if method not in SCALERS:
         raise ValueError(f"unknown scaler method {method!r}; use one of {list(SCALERS)}")
+    scaler = SCALERS[method]()
+    scaler.fit(reference[metrics].to_numpy(dtype=float))
+    return scaler
+
+
+def apply_scaler(df: pd.DataFrame, metrics: list[str], scaler) -> pd.DataFrame:
+    """Apply a fitted scaler. Missing columns are added as NaN to keep the reference's columns."""
     out = df.copy()
-    out[metrics] = SCALERS[method]().fit_transform(out[metrics].to_numpy(dtype=float))
+    values = out.reindex(columns=metrics).to_numpy(dtype=float)
+    out[metrics] = scaler.transform(values)
     return out
 
 
+def scale_metrics(df: pd.DataFrame, metrics: list[str], method: str = "standard") -> pd.DataFrame:
+    """Fit and apply on one table. Only correct when `df` is the only table being scaled."""
+    return apply_scaler(df, metrics, fit_scaler(df, metrics, method))
+
+
 def scale_dataframe(df: pd.DataFrame, method: str = "standard") -> pd.DataFrame:
-    """Standardize every numeric metric column of `df`. Entry point for run_scale."""
+    """Standardize every numeric metric column of `df`, fit on `df` itself."""
     return scale_metrics(df, get_metric_columns(df), method)

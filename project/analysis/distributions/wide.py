@@ -1,29 +1,28 @@
-"""
-Everything here operates on the wide, one-row-per-sample merged table: numeric-metric selection, binder labeling, and the wide -> long reshape for the separability / agreement plots.
-"""
+"""Wide (one row per sample) table helpers: metric selection and the wide -> long reshape."""
 
 from __future__ import annotations
 
 import pandas as pd
-from preprocessing.metric_meta import get_metric_columns
+from preprocessing.metric_meta import get_metric_columns, get_all_metric_columns
+from preprocessing.metadata import add_binder_class  # noqa: F401  -- re-exported
 
 
 def get_numeric_metrics(df: pd.DataFrame) -> list[str]:
-    """Numeric prediction-metric columns (excludes meta/label/experimental columns).
+    """The predictor set: numeric metrics minus the filter-only categories.
 
-    Alias for the analysis layer -- the single implementation lives in preprocessing.metric_meta.get_metric_columns,
-    so preprocessingand analysis can't drift apart.
+    Alias for metric_meta.get_metric_columns. Descriptive analyses want get_all_numeric_metrics.
     """
     return get_metric_columns(df)
 
 
+def get_all_numeric_metrics(df: pd.DataFrame) -> list[str]:
+    """Every numeric metric, filter-only categories included (descriptive analyses)."""
+    return get_all_metric_columns(df)
+
+
 def make_long_scores(df: pd.DataFrame, metrics: list[str]) -> pd.DataFrame:
-    """
-    Convert wide score dataframe into long format for plotting.
-    Required columns: sample, source, type, binder, binder_type
-    Output: sample | source | type | binder | binder_type | metric | value
-    """
+    """Melt to sample | source | type | binder | binder_class | metric | value."""
     return df.melt(
-        id_vars=["sample", "source", "type", "binder", "binder_type"],
+        id_vars=["sample", "source", "type", "binder", "binder_class"],
         value_vars=metrics, var_name="metric", value_name="value",
     )

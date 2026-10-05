@@ -1,8 +1,7 @@
-"""
-Effect sizes for binder vs non-binder separation, per metric.
-All scores are direction-aligned via the YAML first, so every effect size points the same way.
-Cliff's delta (non-parametric; metrics like docking scores / energies are rarely normal) and Mann-Whitney AUROC + p-value. --> primary
-Cohen's d is provided as a secondary check only (normality caveat).
+"""Per-metric effect sizes for binder vs non-binder, on direction-aligned scores.
+
+PRIMARY: Cliff's delta and Mann-Whitney AUROC + p-value, both non-parametric -- energies and
+docking scores are rarely normal. Cohen's d is a secondary check only.
 """
 
 from __future__ import annotations

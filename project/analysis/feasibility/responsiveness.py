@@ -76,3 +76,4 @@ def consistency(resp: pd.DataFrame, group_col: str = "dataset") -> pd.DataFrame:
     for c in ["mean_delta", "min_delta", "max_delta"]:
         s[c] = s[c].round(4)
     return s.sort_values("mean_delta", key=lambda x: x.abs(), ascending=False)
+

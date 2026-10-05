@@ -30,3 +30,21 @@ data/mcmahon/table/master_table_mcmahon.csv
 data/mcmahon/table/merged_mcmahon.csv
 pymol/
 data/
+
+# Provenance run directories (config snapshots, manifests, per-stage logs): regenerated
+# by run_all.sh on every run, and the results they describe live in data/, which is ignored too.
+project/runs/
+
+# Thesis prose -- drafted here, kept out of the code repository.
+# NOTE: Appendix_composite_selection.md is cited by name in analysis/composite/{combine,cv}.py
+# and ARCHITECTURE.md; those references point outside the repo while this is ignored.
+/Methods.md
+/Results_notes.md
+/Results_ranking_notes.md
+/Results_evaluation_notes.md
+/Results_3_1_notes.md
+/Appendix_composite_selection.md
+
+# Superseded planning and audit documents, kept on disk for reference only.
+# The current descriptions are project/ARCHITECTURE.md and project/PIPELINE_SPEC.md.
+project/plans_audits_reports/

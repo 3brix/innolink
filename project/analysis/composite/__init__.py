@@ -11,9 +11,12 @@ from .filtering import (
     quality_filter,
 )
 from .cv import (
+    per_source_metrics,
+    dataset_aware_select,
     stability_select,
     cv_composite_scores,
     evaluate_composites,
+    selection_votes,
 )
 
 __all__ = [
@@ -23,7 +26,10 @@ __all__ = [
     "product_score",
     "build_composites",
     "quality_filter",
+    "per_source_metrics",
+    "dataset_aware_select",
     "stability_select",
+    "selection_votes",
     "cv_composite_scores",
     "evaluate_composites",
 ]

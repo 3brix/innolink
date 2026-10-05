@@ -1,35 +1,37 @@
 """
-Filter designs by: 
-  - quality_filter (analysis.composite)  --> basic confidence QUALITY screen (S1);
-  - apply_gates (analysis.feasibility)   --> custom / literature developability, energy, error gates (S2).
+Feasibility filter -- DESIGN SET ONLY.
 
   S0  all designs
-  S1  + quality screen        (config.analysis.QUALITY_THRESHOLDS)
-  S2  + developability gates  (literature values, analysis.feasibility.DEFAULT_GATES)
+  S1  + quality screen        (config/thresholds.yaml 'quality:' block)
+  S2  + developability gates  (config/thresholds.yaml 'gates:' + 'thresholds:' blocks)
 
-On the labelled benchmark (eval.csv) each stage reports precision, recall and N-kept.
-On the unlabelled designs (design.csv) it reports N-retained plus per-row pass flags.
+All filter configuration lives in config/thresholds.yaml; nothing is hardcoded here.
+
+Why designs only: the labelled benchmark pools antibody and nanobody complexes, whose
+interfaces differ in size, so the PyRosetta interface/developability metrics are not
+comparable across it -- a precision/recall funnel computed there would compare unlike
+things. The design sets are all nanobodies, so the gates are applied there and nowhere
+else. Filtering stays a feasibility screen; it is never used to select or rank binders.
 
 Outputs (under EVALUATION_DIR/<dataset>/filter/):
-  filter_funnel_eval.csv    per-stage precision/recall/N on the benchmark
-  filter_funnel_design.csv  per-stage N-retained on the designs
-  filtered_designs.csv      designs + per-row pass flags (quality_ok, developability_pass,
-                            developability_unknown, passes_filter)
+  filter_funnel_design.csv  per-stage N-retained, plus how many rows S2 could judge
+  filtered_designs.csv      per-design flags (quality_ok, developability_status,
+                            developability_pass, n_gates_seen, passes_filter)
   feasibility_summary.csv   per-model developability gate summary
 """
 
 import logging
 
-import numpy as np
 import pandas as pd
 
 from config.datasets import cfg
 from config.paths import RAW_DATA_DIR, EVALUATION_DIR, METRIC_YAML
-from config.analysis import QUALITY_THRESHOLDS, QUALITY_MODE, MODELS
+from config.analysis import MODELS
 from preprocessing.align import load_metric_directions
 from preprocessing.metadata import split_eval_design
+from preprocessing.metric_meta import load_quality, load_gates
 from analysis.composite import quality_filter
-from analysis.feasibility import DEFAULT_GATES, apply_gates, feasibility_summary
+from analysis.feasibility import apply_gates, feasibility_summary
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -37,103 +39,83 @@ logger = logging.getLogger(__name__)
 
 def developability_pass(df: pd.DataFrame):
     """
-    Apply developability gates per model.
-    Returns (pass_all, unknown_any, models_used, flagged):
-      pass_all    = feasible on every model that has gate columns,
-      unknown_any = any of those verdicts rests on a missing value,
+    Apply the S2 feasibility gates (config/thresholds.yaml) per model.
+    Returns (not_failed, status, models_used, flagged):
+      not_failed  = the row fails no observed gate (True for 'pass' AND 'not_assessable'),
+      status      = 'pass' / 'fail' / 'not_assessable' per row,
       flagged     = the full per-gate flags table.
+
+    'not_assessable' means NO gate value was observed for the row, so its feasibility is
+    unknown rather than confirmed. Those rows are not excluded here (they are reported
+    separately) -- see filter_funnel_design.csv, which counts all three states.
     """
-    flagged = apply_gates(df, DEFAULT_GATES, MODELS)
+    flagged = apply_gates(df, load_gates(), MODELS)
     feas_cols = [f"{m}_feasible" for m in MODELS if f"{m}_feasible" in flagged.columns]
-    unk_cols = [f"{m}_feasible_unknown" for m in MODELS if f"{m}_feasible_unknown" in flagged.columns]
     models_used = [c[:-len("_feasible")] for c in feas_cols]
-    if not feas_cols:
-        idx = df.index
-        return pd.Series(True, index=idx), pd.Series(False, index=idx), [], flagged
-    pass_all = flagged[feas_cols].all(axis=1)
-    unknown_any = flagged[unk_cols].any(axis=1) if unk_cols else pd.Series(False, index=df.index)
-    return pass_all, unknown_any, models_used, flagged
+    status = flagged["developability_status"]
+    return status.ne("fail"), status, models_used, flagged
 
 
-def eval_stage(kept: pd.Series, y_true: pd.Series) -> dict:
-    """precision/recall/N for a boolean 'kept' mask against binary labels."""
-    kept = kept.fillna(False)
-    n_kept = int(kept.sum())
-    y = y_true.astype(int)
-    n_pos = int((y == 1).sum())
-    tp = int(((kept) & (y == 1)).sum())
-    return {"n_kept": n_kept,
-            "precision": round(tp / n_kept, 4) if n_kept else np.nan,
-            "recall": round(tp / n_pos, 4) if n_pos else np.nan}
-
-
-# load
+# load: designs only
 base = RAW_DATA_DIR / cfg.name
 output_dir = EVALUATION_DIR / cfg.name / "filter"
 output_dir.mkdir(parents=True, exist_ok=True)
 
-merged = pd.read_csv(base / "merged.csv") if (base / "merged.csv").exists() else None
-eval_path, design_path = base / "eval.csv", base / "design.csv"
-eval_df = pd.read_csv(eval_path) if eval_path.exists() else (
-    split_eval_design(merged)[0] if merged is not None else None)
-design_df = pd.read_csv(design_path) if design_path.exists() else (
-    split_eval_design(merged)[1] if merged is not None else None)
+design_path = base / "design.csv"
+if design_path.exists():
+    design_df = pd.read_csv(design_path)
+elif (base / "merged.csv").exists():
+    design_df = split_eval_design(pd.read_csv(base / "merged.csv"))[1]
+else:
+    raise SystemExit("run_filter: no design.csv/merged.csv found; run data_prep first.")
 
-if eval_df is None:
-    raise SystemExit("run_filter: no eval.csv/merged.csv found; run data_prep first.")
+if not len(design_df):
+    raise SystemExit(f"run_filter: no design rows for '{cfg.name}' -- nothing to filter.")
 
 directions = load_metric_directions(METRIC_YAML)
+quality_cutoffs, quality_mode = load_quality()
+gates = load_gates()
+logger.info("Filtering %d designs", len(design_df))
+logger.info("S1 quality screen: %s (mode=%s)", quality_cutoffs, quality_mode)
+logger.info("S2 gates: %s", [f"{g['metric']} {g['kind']} {g.get('value', g.get('bounds'))}" for g in gates])
 
 
-def funnel(df: pd.DataFrame, labelled: bool) -> pd.DataFrame:
-    """Compute the cumulative funnel S0->S2 (quality, then developability)."""
-    q = quality_filter(df, QUALITY_THRESHOLDS, directions, mode=QUALITY_MODE)
-    quality_ok = (q["quality_flag"] == "ok")
-    dev_ok, _, _, _ = developability_pass(df)
-
+def funnel(df: pd.DataFrame, quality_ok: pd.Series, dev_status: pd.Series) -> pd.DataFrame:
+    """Cumulative funnel S0->S2. n_assessable records how many rows S2 could actually judge."""
     s0 = pd.Series(True, index=df.index)
     s1 = s0 & quality_ok
-    s2 = s1 & dev_ok
-
-    rows = []
-    y = df["binder"].astype(int) if labelled else None
-
-    def add(stage, mask):
-        rec = {"stage": stage}
-        if labelled:
-            rec.update(eval_stage(mask, y))
-        else:
-            rec["n_kept"] = int(mask.fillna(False).sum())
-        rows.append(rec)
-
-    add("S0_all", s0)
-    add("S1_quality", s1)
-    add("S2_developability", s2)
+    s2 = s1 & dev_status.ne("fail")
+    rows = [{"stage": "S0_all", "n_kept": int(s0.sum())},
+            {"stage": "S1_quality", "n_kept": int(s1.sum())},
+            {"stage": "S2_developability", "n_kept": int(s2.sum()),
+             "n_assessable": int((dev_status[s1] != "not_assessable").sum()),
+             "n_not_assessable": int((dev_status[s1] == "not_assessable").sum()),
+             "n_failed_gate": int((dev_status[s1] == "fail").sum())}]
     return pd.DataFrame(rows)
 
 
-# benchmark funnel (precision/recall/N)
-funnel(eval_df, labelled=True).to_csv(output_dir / "filter_funnel_eval.csv", index=False)
+q = quality_filter(design_df, quality_cutoffs, directions, mode=quality_mode)
+quality_ok = (q["quality_flag"] == "ok")
+dev_ok, dev_status, models_used, dev_flags = developability_pass(design_df)
 
-# design funnel (N retained) + per-row diagnostics
-if design_df is not None and len(design_df):
-    funnel(design_df, labelled=False).to_csv(output_dir / "filter_funnel_design.csv", index=False)
+funnel(design_df, quality_ok, dev_status).to_csv(output_dir / "filter_funnel_design.csv", index=False)
 
-    q = quality_filter(design_df, QUALITY_THRESHOLDS, directions, mode=QUALITY_MODE)
-    dev_ok, dev_unknown, models_used, dev_flags = developability_pass(design_df)
-    diag = design_df.copy()
-    diag["quality_ok"] = (q["quality_flag"] == "ok").values
-    diag["developability_pass"] = dev_ok.values
-    diag["developability_unknown"] = dev_unknown.values
-    # passes_filter = the two screens combined.  Consumed by run_consensus for the filter-aware shortlist
-    diag["passes_filter"] = diag["quality_ok"] & diag["developability_pass"]
-    keep = [c for c in ("sample", "dataset", "binder") if c in diag.columns]
-    diag[keep + ["quality_ok", "developability_pass", "developability_unknown", "passes_filter"]] \
-        .to_csv(output_dir / "filtered_designs.csv", index=False)
+diag = design_df.copy()
+diag["quality_ok"] = quality_ok.values
+diag["developability_status"] = dev_status.values        # pass / fail / not_assessable
+diag["developability_pass"] = dev_status.eq("pass").values
+diag["n_gates_seen"] = dev_flags["n_gates_seen"].values
+# not excluded by either screen; 'not_assessable' passes (unknown, not bad)
+diag["passes_filter"] = diag["quality_ok"] & dev_ok.values
+keep = [c for c in ("sample", "dataset", "binder") if c in diag.columns]
+diag[keep + ["quality_ok", "developability_status", "developability_pass",
+             "n_gates_seen", "passes_filter"]].to_csv(output_dir / "filtered_designs.csv", index=False)
 
-    # per-model developability gate summary
-    feasibility_summary(dev_flags, MODELS).to_csv(output_dir / "feasibility_summary.csv", index=False)
+# per-model developability gate summary
+feasibility_summary(dev_flags, MODELS).to_csv(output_dir / "feasibility_summary.csv", index=False)
 
 print(f"[{cfg.name}] filter report -> {output_dir}")
-print("  benchmark funnel (eval):")
-print(pd.read_csv(output_dir / "filter_funnel_eval.csv").to_string(index=False))
+print(f"  models with gate columns: {models_used or '(none)'}")
+print("  developability status:", dev_status.value_counts().to_dict())
+print("  design funnel:")
+print(pd.read_csv(output_dir / "filter_funnel_design.csv").to_string(index=False))

@@ -7,10 +7,10 @@ import pandas as pd
 
 from config.prep import COLS_TO_DROP
 from config.analysis import EXCLUDE_COLS
-from preprocessing.chai_metrics import process_chai_metrics
-from preprocessing.metadata import add_binder_type, split_eval_design
-from preprocessing.metric_meta import load_categories, get_category
-from config.analysis import FILTER_ONLY_CATEGORIES
+# Chai is excluded as a model (config/prep.py), so process_chai_metrics is not called; every
+# column it derives is already in COLS_TO_DROP. Re-enable the import and the call to bring it back.
+# from preprocessing.chai_metrics import process_chai_metrics
+from preprocessing.metadata import add_binder_class, split_eval_design
 
 
 
@@ -18,9 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def warn_experimental_columns(df: pd.DataFrame) -> list[str]:       
-    """
-    Leakage guard: flag experimental affinity config.analysis.EXCLUDE_COLS (EXCLUDE_COLS = KD[M], EC50[M]),
-    Returns the offending column names (+ logged as a warning).
+    """Leakage guard: flag any EXCLUDE_COLS (KD[M], EC50[M]) present. Returns and logs them.
     """
     present = [c for c in EXCLUDE_COLS if c in df.columns]
     if present:
@@ -36,12 +34,9 @@ def load_predictions(
     target_shuffle_path: str | Path | None = None,
     keep_interfaces: set[str] | None = None,
 ) -> pd.DataFrame:
-    """
-    Load prediction CSVs and optionally filter interfaces.
+    """Load prediction CSVs, optionally appending target-shuffle rows and filtering interfaces.
 
-    predictions_path: path to predictions CSV.
-    target_shuffle_path: optional path to target shuffle predictions.  ->> maybe drop?
-    keep_interfaces: interfaces to retain; None applies no interface filtering.
+    keep_interfaces=None applies no interface filtering.
     """
     df = pd.read_csv(predictions_path)
     if target_shuffle_path is not None:
@@ -57,7 +52,7 @@ def aggregate_predictions(df: pd.DataFrame) -> pd.DataFrame:
     """Aggregate predictions to one row per sample (numeric mean, other types first)."""
     numeric_cols = df.select_dtypes(include="number").columns
     other_cols = [c for c in df.columns if c not in numeric_cols and c != "sample"]
-    agg = {c: "max" for c in numeric_cols} # was mean first decided to change it to max or weighted mean
+    agg = {c: "mean" for c in numeric_cols} #  max or weighted mean ?
     agg.update({c: "first" for c in other_cols})
     return df.groupby("sample").agg(agg).copy().reset_index()
 
@@ -67,9 +62,7 @@ def drop_columns(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
     return df.drop(columns=columns, errors="ignore")
 
 
-# plddt for af3,cf(0-100) and boltz, esmfold(0-1) are on different scales, so we need to normalize them to be comparable
-# normalize plddt to 0-1 scale for columns "af3_plddt","af3_iplddt" and "cf_plddt", cf "iplddt" by dividing by 100
-# TO DO: pae /pde?
+# af3/cf report plddt on 0-100, boltz/esmfold on 0-1: divide the former by 100 to match
 def normalize_plddt(df):
     df = df.copy()
     for col in ["af3_plddt", "af3_iplddt", "cf_plddt", "cf_iplddt"]:  # + esmfold_plddt, esmfold_iplddt --> esmfold currently excluded from analysis
@@ -102,9 +95,7 @@ def save_dataframe(df: pd.DataFrame, path: str | Path) -> None:
 
 
 def save_eval_design(merged: pd.DataFrame, output_path: str | Path) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """
-    Split "merged" into evaluation / design base tables and save both.
-    design.csv is only written when design rows exist. Returns (eval_df, design_df).
+    """Split merged into eval / design and save both; design.csv only when design rows exist.
     """
     base = Path(output_path)
     eval_df, design_df = split_eval_design(merged)
@@ -116,6 +107,22 @@ def save_eval_design(merged: pd.DataFrame, output_path: str | Path) -> tuple[pd.
     return eval_df, design_df
 
 
+def curate_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Drop every column in COLS_TO_DROP. The list is AUTHORITATIVE -- no category is spared, so
+    filter-relevant columns are simply not listed there.
+
+    Used by prepare_dataset AND the pooled branch of run_data_prep: a pooled table would otherwise
+    inherit whatever curation its members happened to be built with."""
+    return drop_columns(df, COLS_TO_DROP)
+
+
+def assert_curated(df: pd.DataFrame, name: str = "table") -> None:
+    """Fail loudly if a column COLS_TO_DROP says to remove survived into `df`."""
+    survivors = [c for c in COLS_TO_DROP if c in df.columns]
+    if survivors:
+        raise ValueError(f"{name}: {len(survivors)} column(s) in COLS_TO_DROP survived curation: {survivors}")
+
+
 def prepare_dataset(
     predictions_path: str | Path,
     mastertable: pd.DataFrame,
@@ -124,24 +131,21 @@ def prepare_dataset(
     target_shuffle_path: str | Path | None = None,
     mol_type: str | None = None,
 ):
-    """
-    Build tables: merged.csv + eval.csv + design.csv.
+    """Build merged.csv + eval.csv + design.csv.
     """
     predictions = load_predictions(predictions_path, target_shuffle_path, keep_interfaces)
     predictions = aggregate_predictions(predictions)
-    # keep developability/energy columns 
-    _cats = load_categories()
-    _drop = [c for c in COLS_TO_DROP if get_category(c, _cats) not in FILTER_ONLY_CATEGORIES]
-    predictions = drop_columns(predictions, _drop)
+    predictions = curate_columns(predictions)
     predictions = normalize_plddt(predictions)
 
     validate_dataframe(mastertable, {"sample"}, name="mastertable")
     merged = merge_with_mastertable(predictions, mastertable)
-    merged = process_chai_metrics(merged)
-    merged = add_binder_type(merged)
+    # merged = process_chai_metrics(merged)   # Chai excluded -- see note at the import
+    merged = add_binder_class(merged)
     if mol_type is not None:
         merged["mol_type"] = mol_type          # nanobody / antibody, persisted for stratified reporting
     warn_experimental_columns(merged)
+    assert_curated(merged, name=str(output_path))
 
     save_dataframe(merged, output_path)
     save_eval_design(merged, output_path)

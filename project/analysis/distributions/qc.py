@@ -2,7 +2,7 @@ import logging
 import numpy as np
 import pandas as pd
 
-from config.analysis import EXCLUDE_COLUMNS
+from preprocessing.metric_meta import get_all_metric_columns
 
 
 logger = logging.getLogger(__name__)
@@ -31,7 +31,8 @@ def check_basic_integrity(df: pd.DataFrame) -> dict:
         report["unknown_type"] = int(((_t == "target_shuffle") & (_b != 0)).sum())
 
     # Metric overview
-    metric_columns = [c for c in df.columns if c not in EXCLUDE_COLUMNS]
+    # one definition of "metric": the full annotated numeric set (see metric_meta)
+    metric_columns = get_all_metric_columns(df)
     report["n_metrics"] = len(metric_columns)
 
     metric_missing = (df[metric_columns].isna().sum().sort_values(ascending=False))
@@ -50,7 +51,7 @@ def check_basic_integrity(df: pd.DataFrame) -> dict:
 def nonfinite_report(df: pd.DataFrame) -> pd.DataFrame:
     """Per-metric non-finite counts (NaN / +inf / -inf); one row per metric that has any, worst first."""
     numeric = df.select_dtypes(include="number")
-    metrics = [c for c in numeric.columns if c not in EXCLUDE_COLUMNS]
+    metrics = get_all_metric_columns(df)
     X = numeric[metrics]
     Xv = X.to_numpy()
 
@@ -68,7 +69,7 @@ def nonfinite_report(df: pd.DataFrame) -> pd.DataFrame:
 def missing_metrics_by_sample(df: pd.DataFrame) -> pd.DataFrame:
     """Per-sample breakdown of which metrics are missing. Header only when no missing values."""
 
-    metric_columns = [c for c in df.columns if c not in EXCLUDE_COLUMNS]
+    metric_columns = get_all_metric_columns(df)
     meta_cols = [c for c in ("sample", "dataset", "source", "type", "binder") if c in df.columns]
 
     isna = df[metric_columns].isna()
@@ -89,8 +90,7 @@ def missing_metrics_by_sample(df: pd.DataFrame) -> pd.DataFrame:
 def metric_description(df: pd.DataFrame) -> pd.DataFrame:
     """Per-metric summary statistics """
 
-    numeric = df.select_dtypes(include="number").columns
-    metrics = [c for c in numeric if c not in EXCLUDE_COLUMNS]
+    metrics = get_all_metric_columns(df)
 
     summary = (df[metrics].describe().T.reset_index().rename(columns={"index": "metric"}))
     summary["missing"] = len(df) - summary["count"]

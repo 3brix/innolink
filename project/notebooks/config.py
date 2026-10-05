@@ -118,7 +118,7 @@ N_ITERATIONS = 1
 
 
 # --- Columns excluded from "numeric metric" treatment ---
-META_COLS = ["sample", "binder", "source", "type", "iteration", "binder_type"]
+META_COLS = ["sample", "binder", "source", "type", "iteration", "binder_class"]
 EXCLUDE_COLS = ["KD[M]", "EC50[M]"]
 
 # --- Plot styling ---

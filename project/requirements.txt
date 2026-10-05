@@ -22,8 +22,16 @@ pyyaml>=6.0
 matplotlib>=3.7
 seaborn>=0.13
 
-# Running the Random Forest ranking notebook headlessly as a pipeline stage
-# (jupyter nbconvert --execute notebooks/ranking_rf_final.ipynb)
+# OPTIONAL -- the UMAP metric embedding (analysis/evaluation/redundancy.py imports it lazily,
+# so every pipeline stage runs without it; only umap_embedding / the UMAP figure needs it).
+umap-learn>=0.5
+
+# OPTIONAL -- only for opening/executing the figure + exploratory notebooks. No pipeline stage
+# needs Jupyter any more: the RF ranker is run_ranking_rf.py, a normal stage script.
 nbconvert>=7.0
 nbformat>=5.0
 ipykernel>=6.0
+
+# Test suite (tests/). Not needed to run the pipeline:
+#     PYTHONPATH=. python -m pytest -q
+pytest>=7.0

@@ -6,24 +6,27 @@ benchmark (eval.csv):
 
   - DERIVED : the data-driven, F1-optimal cutoff found on the benchmark
               (via analysis.evaluation.calculate_all_metrics), in native units;
-  - LITERATURE : the per-family value in config/thresholds.yaml.
+  - REFERENCE  : the metric's 'reference:' value in config/metric_data.yaml -- the
+              conventional operating point for that metric.
 
 For each it reports precision, recall and N-passing, plus the metric's PR-AUC /
-ROC-AUC / effect direction and the class balance.
+ROC-AUC / effect direction and the class balance. The point of the comparison is to show
+whether the conventional cutoffs transfer to this data (several do not: the esm3dg_dg_a reference
+value retains 1 of 133 samples), which is what justifies the distribution-based gate values
+used in config/thresholds.yaml.
 
-IMPORTANT: this stage writes reports only.
+Reports only -- nothing downstream reads these files.
 
 Two-sided WINDOW families (e.g. net_charge, surface_hydrophobicity) are excluded from
 this one-sided report and listed separately.
 
 Outputs (under EVALUATION_DIR/<dataset>/thresholds/):
-  threshold_report.csv            per metric, derived vs literature, pooled
+  threshold_report.csv            per metric, derived vs reference, pooled
   threshold_report_by_category.csv    per-category summary
   threshold_report_by_dataset.csv     per metric x dataset (pooled sets only)
 """
 
 import logging
-import os
 
 import numpy as np
 import pandas as pd
@@ -31,22 +34,16 @@ import pandas as pd
 
 from config.datasets import cfg
 from config.paths import RAW_DATA_DIR, EVALUATION_DIR, METRIC_YAML
-from config.analysis import WINDOW_FAMILIES, PRECISION_TARGET as _PT_DEFAULT, N_MIN as _NMIN_DEFAULT
+from preprocessing.metric_meta import load_window_families
 from preprocessing.align import load_metric_directions, get_direction
-from preprocessing.metric_meta import load_categories, get_category, load_thresholds
-from analysis.distributions import get_numeric_metrics
+from preprocessing.metric_meta import load_categories, get_category, load_reference_values, get_reference_value
+from analysis.distributions import get_all_numeric_metrics
 from analysis.io import load_eval, rankings_for
-from analysis.evaluation import select_threshold
 from analysis.evaluation import calculate_all_metrics, load_metric_families, get_family, precision_recall_at
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Precision-first threshold selection (Q1). CONFIGURABLE and intentionally NOT final:
-# choose the operating values after inspecting threshold_sweep.csv on the full data.
-PRECISION_TARGET = float(os.getenv("PRECISION_TARGET", _PT_DEFAULT))   # default in config.analysis
-N_MIN = int(os.getenv("N_MIN", _NMIN_DEFAULT))                          # default in config.analysis
-SWEEP_TARGETS = [0.6, 0.7, 0.8, 0.9, 0.95]                       # for the parameter-choice sweep
 
 
 
@@ -56,9 +53,9 @@ SWEEP_TARGETS = [0.6, 0.7, 0.8, 0.9, 0.95]                       # for the param
 
 
 def build_report(df: pd.DataFrame, metrics: list[str], directions: dict,
-                 families: dict, categories: dict, lit_thresholds: dict,
+                 families: dict, categories: dict, reference_values: dict,
                  derived: pd.DataFrame | None = None) -> pd.DataFrame:
-    """One row per metric: derived (F1-opt) vs literature cutoff, each with prec/recall/N."""
+    """One row per metric: derived (F1-opt) vs conventional reference cutoff, each with prec/recall/N."""
     if derived is None:
         derived = calculate_all_metrics(df, metrics, directions)
     derived = derived.set_index("metric")
@@ -80,19 +77,14 @@ def build_report(df: pd.DataFrame, metrics: list[str], directions: dict,
         derived_cut = d.get("opt_threshold_raw", np.nan)
         der = precision_recall_at(df[m], y_true, derived_cut, direction)
 
-        lit_cut = lit_thresholds.get(family) if family else None
-        # only scalar literature cutoffs apply here (windows/null handled elsewhere)
-        lit_cut = lit_cut if isinstance(lit_cut, (int, float)) else None
-        lit = precision_recall_at(df[m], y_true, lit_cut, direction)
+        ref_cut = get_reference_value(m, reference_values)
+        # only scalar reference cutoffs apply here (windows/null handled elsewhere)
+        ref_cut = ref_cut if isinstance(ref_cut, (int, float)) else None
+        ref = precision_recall_at(df[m], y_true, ref_cut, direction)
 
         pr_auc = float(d.get("pr_auc", np.nan))
 
-        # target-precision + N-floor operating point (precision-first filtering, Q1)
-        aligned = df[m] * direction
-        sel = select_threshold(y_true, aligned, PRECISION_TARGET, N_MIN)
-        tp_cut_native = round(sel["threshold"] * direction, 4) if np.isfinite(sel["threshold"]) else np.nan
-        # enrichment: precision enrichment (threshold-dependent) vs PR-AUC-vs-baseline (threshold-independent).
-        prec_enr = round(sel["precision"] / base_rate, 3) if (sel["precision"] == sel["precision"] and base_rate) else np.nan
+        # PR-AUC relative to the positive-class baseline: threshold-INDEPENDENT enrichment
         pr_auc_vs_base = round(pr_auc / base_rate, 3) if (np.isfinite(pr_auc) and base_rate) else np.nan
 
         rows.append({
@@ -104,15 +96,9 @@ def build_report(df: pd.DataFrame, metrics: list[str], directions: dict,
             # F1-optimal cutoff (kept as reference)
             "f1_cutoff": derived_cut,
             "f1_precision": der["precision"], "f1_recall": der["recall"], "f1_n_pass": der["n_pass"],
-            # target-precision + N-floor cutoff (precision-first)
-            "tp_cutoff": tp_cut_native,
-            "tp_precision": sel["precision"], "tp_recall": sel["recall"],
-            "tp_n_pass": sel["n_pass"], "tp_n_pos_retained": sel["n_pos_retained"],
-            "tp_precision_enrichment": prec_enr,           # threshold-dependent precision enrichment
-            "tp_status": sel["status"],
-            # literature cutoff (for comparison)
-            "lit_cutoff": lit_cut,
-            "lit_precision": lit["precision"], "lit_recall": lit["recall"], "lit_n_pass": lit["n_pass"],
+            # conventional reference cutoff (for comparison)
+            "ref_cutoff": ref_cut,
+            "ref_precision": ref["precision"], "ref_recall": ref["recall"], "ref_n_pass": ref["n_pass"],
             "n_eval": der["n_eval"],
         })
     out = pd.DataFrame(rows)
@@ -130,54 +116,33 @@ logger.info("Threshold report on %d labelled rows", len(df))
 directions = load_metric_directions(METRIC_YAML)
 families = load_metric_families(METRIC_YAML)
 categories = load_categories(METRIC_YAML)
-lit_thresholds = load_thresholds()
+reference_values = load_reference_values()
 
-# candidate metrics: numeric, minus two-sided window families
-all_metrics = get_numeric_metrics(df)
-window_cols = [m for m in all_metrics if get_family(m, families) in WINDOW_FAMILIES]
+# FULL set minus the two-sided window families: this report is descriptive, and the
+# developability/energy families are exactly the ones thresholds.yaml documents.
+all_metrics = get_all_numeric_metrics(df)
+window_cols = [m for m in all_metrics if get_family(m, families) in load_window_families()]
 metrics = [m for m in all_metrics if m not in window_cols]
 if window_cols:
     logger.info("Excluded %d two-sided window metric(s) from one-sided report: %s",
                 len(window_cols), window_cols)
 
-report = build_report(df, metrics, directions, families, categories, lit_thresholds,
+report = build_report(df, metrics, directions, families, categories, reference_values,
                       derived=rankings_for(cfg, df, metrics, directions))
 report.to_csv(output_dir / "threshold_report.csv", index=False)
 
-# per-category summary: how well each category separates binders, derived vs literature
+# per-category summary: how well each category separates binders, derived vs reference
 by_cat = (report.groupby("category")
           .agg(n_metrics=("metric", "count"),
                mean_pr_auc=("pr_auc", "mean"),
                mean_roc_auc=("roc_auc", "mean"),
                n_above_baseline=("above_baseline", "sum"),
-               mean_tp_precision=("tp_precision", "mean"),
-               mean_lit_precision=("lit_precision", "mean"))
+               mean_ref_precision=("ref_precision", "mean"))
           .round(4).reset_index()
           .sort_values("mean_pr_auc", ascending=False))
 by_cat.to_csv(output_dir / "threshold_report_by_category.csv", index=False)
 
 
-# Precision-target sweep (for choosing PRECISION_TARGET / N_MIN).
-# For each confidence/interface metric and each candidate precision target, show the best-retaining cutoff (n_min=1) 
-_directions = directions
-sweep_rows = []
-for m in metrics:
-    if get_category(m, categories) not in ("confidence", "interface"):
-        continue
-    direction = get_direction(m, _directions)
-    aligned = df[m] * direction
-    for pt in SWEEP_TARGETS:
-        s = select_threshold(df["binder"], aligned, precision_target=pt, n_min=1)
-        sweep_rows.append({
-            "metric": m, "family": get_family(m, families), "precision_target": pt,
-            "cutoff": round(s["threshold"] * direction, 4) if s["threshold"] == s["threshold"] else float("nan"),
-            "achieved_precision": s["precision"], "recall": s["recall"],
-            "n_pass": s["n_pass"], "n_pos_retained": s["n_pos_retained"], "status": s["status"],
-        })
-if sweep_rows:
-    pd.DataFrame(sweep_rows).to_csv(output_dir / "threshold_sweep.csv", index=False)
-    logger.info("wrote threshold_sweep.csv (%d confidence/interface metrics x %d targets)",
-                len(sweep_rows) // len(SWEEP_TARGETS), len(SWEEP_TARGETS))
 
 # per-dataset breakdown for pooled sets
 if cfg.is_set and "dataset" in df.columns:
@@ -186,7 +151,7 @@ if cfg.is_set and "dataset" in df.columns:
         if g["binder"].nunique() < 2:
             logger.warning("skipping %s: single binder class", ds)
             continue
-        r = build_report(g, metrics, directions, families, categories, lit_thresholds)
+        r = build_report(g, metrics, directions, families, categories, reference_values)
         r.insert(0, "dataset", ds)
         parts.append(r)
     if parts:
@@ -195,5 +160,5 @@ if cfg.is_set and "dataset" in df.columns:
 
 print(f"[{cfg.name}] threshold report -> {output_dir}")
 print(f"  metrics reported: {len(report)}  (window metrics excluded: {len(window_cols)})")
-print("  per-category separation (mean PR-AUC, derived vs literature precision):")
+print("  per-category separation (mean PR-AUC, derived vs reference precision):")
 print(by_cat.to_string(index=False))
