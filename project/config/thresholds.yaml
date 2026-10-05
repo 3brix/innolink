@@ -1,0 +1,94 @@
+# =============================================================================
+# DESIGN-FILTER configuration. Two blocks:
+#
+#   quality:  S1 confidence screen  -> preprocessing.metric_meta.load_quality --> disabled
+#   gates:    S2 feasibility gates  -> preprocessing.metric_meta.load_gates
+#
+# Every gate carries its OWN number here, so this file alone tells you what the filter does.
+# Conventional reference values live per metric in config/metric_data.yaml 'reference:' -- metric
+# metadata used by the threshold REPORT, which also defines window-ness and therefore feeds the
+# composite candidate pool. Keeping the two apart stops a filtering choice from moving the
+# composite.
+#
+# - Applied to RAW merged.csv / design.csv values (native units; plddt is 0-1 post normalize_plddt).
+# - Direction (higher/lower better) is read from metric_data.yaml, NOT here; a [lo, hi] value is a
+#   band, a scalar is min (direction +1) or max (direction -1).
+# - Filtering runs on the DESIGN set only (the benchmark pools antibody and nanobody complexes,
+#   whose interfaces are not comparable), so scaffold-specific numbers are legitimate here.
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# S1: confidence quality screen. Per-COLUMN cutoffs (FULL column names here -- unlike the S2
+# 'gates:' block, S1 does NOT expand a bare suffix across models); mode 'any' flags a sample when
+# any rule matches, 'all' only when all do.
+#
+# DISABLED: with no columns the screen flags nothing and the filter is a pure feasibility screen.
+# It was measured to be redundant -- on germinal0 (79) and esm0 (611) every design that passed the
+# S2 gates had already passed S1, so S1 removed nothing S2 did not remove anyway (germinal0 23
+# rows, esm0 7 rows, all of them S2 failures too). Re-enable by uncommenting.
+# ---------------------------------------------------------------------------
+quality:
+  mode: any
+  columns: {}
+    # esmfold2_plddt: 0.7
+    # af3_pae: 5.0
+
+# ---------------------------------------------------------------------------
+# S2: strcutural feasibility gates. Each entry is {metric: <column suffix>, value|bounds: ..., models?: [...]}.
+# apply_gates tries '<model>_<suffix>' for every model in config.analysis.MODELS and skips absent
+# columns; 'models' restricts a gate to named models.
+#
+# ONLY developability / energy / sequence metrics belong here. Confidence and interface metrics are
+# already inputs to the composite and the RF; gating on them again would double-count the same
+# predictive signal (this is the retired S3 screen -- do not re-add it).
+# ---------------------------------------------------------------------------
+gates:
+  # developability (conventional values)
+  - {metric: sap_score, value: 0.5}                         # max
+  - {metric: interface_delta_unsat_hbonds, value: 4}        # max
+  - {metric: net_charge, bounds: [-4, 4]}                   # band
+  - {metric: surface_hydrophobicity, bounds: [0.25, 0.40]}  # band
+
+  # hydrophobic SASA < 1.7 x Ideal Surface Area, ISA = 4*pi*R^2, R = 2.24 * N^0.392 (N = binder
+  # residues). Designs are ~120 residues (germinal0 exactly 120, esm0 median 124), so N=120 is
+  # the strictest: R=14.63 A, ISA=2690 A^2, 1.7*ISA=4573 A^2. One-sided upper bound, not a window.
+  # Observed 664-2168 A^2, so this passes everything: a sanity bound against pathological or
+  # extended structures, not a discriminating filter. Scaffold-specific!
+  - {metric: hydrophobic_sasa, value: 4573}                 # max
+
+  # remaining developability metrics, at their metric_data.yaml 'reference:' values
+  - {metric: sap_score_complex, value: 0.4}                 # max  (whole-complex SAP; sap_score gates the binder alone)
+  - {metric: dsap, value: 0}                                # max  (complex - binder: no SAP increase on binding)
+  - {metric: interface_sc, value: 0.6}                      # min  shape complementarity
+  - {metric: interface_packstat, value: 0.5}                # min
+  - {metric: interface_interface_hbonds, value: 1}          # min
+  - {metric: interface_nres, value: 4}                      # min  interface residues
+
+  # energy
+  # af3 only: the cf PyRosetta energy columns are dropped entirely (see config/prep.py).
+  - {metric: pyros_binder_score, value: 0, models: [af3]}   # max -> 77% of germinal0 pass
+
+  # af3 PyRosetta interface energetics, at their metric_data.yaml 'reference:' values
+  - {metric: interface_dG, value: 25}                      # max  (dG <= -10)
+  - {metric: interface_dG_SASA_ratio, value: 2.5}             # max
+  - {metric: interface_dSASA, bounds: [800, 1500]}          # band buried interface area
+
+  # ESM3 dG: a high-percentile bound read off the design distribution
+  - {metric: esm3dg_dg, value: 3.8}                         # max (???) --> high for esm0 designs, drop?
+  # per-chain and spread terms of the same ESM3 dG, at their 'reference:' values
+  #- {metric: esm3dg_dg_a, value: 3}                         # max
+  # - {metric: esm3dg_dg_b, value: 2}                       # max
+  # - {metric: esm3dg_dg_std, value: 0.2}                     # max
+
+  # sequence (MPNN).
+  # MPNN is observed for only 45% of labeled samples but 100% of designs, so it gates what it cannot be benchmarked on.
+  - {metric: mpnn_confidence, value: 0.15}                  # min
+  - {metric: mpnn_nll_a, value: 2.0}                      # max (?)
+  #- {metric: mpnn_nll, value: 1.7}                          # max 
+  #- {metric: mpnn_nll_b, value: 2.0}                        # max
+
+  # Filter-only metrics by model, for contrast: af3 16, boltz_free 8, boltz_template 8, esmfold2 8, cf 0, pred 0.
+
+  # developability (12): af3_surface_hydrophobicity, af3_interface_sc, af3_interface_packstat, af3_interface_interface_hbonds, af3_interface_delta_unsat_hbonds, af3_interface_nres, af3_interface_hydrophobicity, af3_sap_score, af3_hydrophobic_sasa, af3_net_charge, af3_sap_score_complex, af3_dsap
+  # energy (16): af3_interface_dG, af3_interface_dSASA, af3_interface_dG_SASA_ratio, af3_pyros_binder_score, plus esm3dg_dg / _a / _b / _std for boltz_free, boltz_template and esmfold2
+  # sequence (12): mpnn_confidence, mpnn_nll, mpnn_nll_a, mpnn_nll_b for boltz_free, boltz_template and esmfold2

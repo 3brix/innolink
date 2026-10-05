@@ -1,0 +1,37 @@
+# ---------------------------------------------------------------------------
+# Binder benchmarking & design-ranking pipeline -- Python dependencies
+# ---------------------------------------------------------------------------
+# These are LOWER BOUNDS chosen for the APIs the code uses, not exact pins.
+# For a fully reproducible environment, create/activate your env, install these,
+# then freeze exact versions on the machine you actually run on:
+#
+#     pip install -r requirements.txt
+#     pip freeze > requirements.lock.txt
+#
+# and commit requirements.lock.txt alongside your results.
+# ---------------------------------------------------------------------------
+
+# Core analysis stack
+numpy>=1.24
+pandas>=2.0
+scipy>=1.10
+scikit-learn>=1.4   # >=1.4: RandomForest tolerates NaN features (used when scoring designs)
+pyyaml>=6.0
+
+# Plotting (figures / *_plots.ipynb notebooks)
+matplotlib>=3.7
+seaborn>=0.13
+
+# OPTIONAL -- the UMAP metric embedding (analysis/evaluation/redundancy.py imports it lazily,
+# so every pipeline stage runs without it; only umap_embedding / the UMAP figure needs it).
+umap-learn>=0.5
+
+# OPTIONAL -- only for opening/executing the figure + exploratory notebooks. No pipeline stage
+# needs Jupyter any more: the RF ranker is run_ranking_rf.py, a normal stage script.
+nbconvert>=7.0
+nbformat>=5.0
+ipykernel>=6.0
+
+# Test suite (tests/). Not needed to run the pipeline:
+#     PYTHONPATH=. python -m pytest -q
+pytest>=7.0
