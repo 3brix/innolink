@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ===========================================================================
-# run_all.sh - run the binder benchmarking & ranking pipeline end to end
+# run_all.sh — run the binder benchmarking & ranking pipeline end to end
 # ===========================================================================
 # Runs every stage in order for ONE dataset (or pooled set), stopping at the
 # first failure. All configuration comes from environment variables (see
@@ -8,13 +8,14 @@
 #
 #   DATASET   which dataset or pooled set to run        (default: rf)
 #   SCALER    'standard' or 'robust' for run_scale.py   (default: standard)
-#   RUN_RF    1 = also run the Random Forest notebook   (default: 1)
-#             set RUN_RF=0 to skip it (e.g. no Jupyter installed)
+#
+# Every stage is a plain `"$PYTHON" run_<stage>.py`, so a failure anywhere stops the
+# run. (The RF used to run as a notebook via nbconvert --allow-errors, which hid
+# failures and needed a kernelspec workaround; it is now run_ranking_rf.py.)
 #
 # One run directory is created up front (runs/<dataset>_<timestamp>/). It holds
-# a snapshot of config/, a manifest.json, per-stage logs, and the executed RF
-# notebook. Stage OUTPUT tables still land in data/ exactly as before - the run
-# directory is added for provenance, it does not move the pipeline's outputs.
+# a snapshot of config/, a manifest.json and per-stage logs. Stage OUTPUT tables
+# still land in data/ exactly as before — the run directory is provenance only.
 #
 # Usage:
 #   DATASET=rf ./run_all.sh
@@ -36,21 +37,34 @@ export PYTHONPATH="${PYTHONPATH:-.}"
 # ---------------------------------------------------------------------------
 export DATASET="${DATASET:-rf}"
 export SCALER="${SCALER:-standard}"
-RUN_RF="${RUN_RF:-1}"
-RF_NOTEBOOK="notebooks/ranking_rf_final.ipynb"
+
+# Interpreter: prefer $PYTHON, then `python`, then `python3`. Conda/micromamba envs provide
+# `python`, but a bare system PATH often only has `python3` -- assuming `python` made this script
+# die on line 1 with "python: command not found".
+PYTHON="${PYTHON:-$(command -v python || command -v python3 || true)}"
+if [ -z "$PYTHON" ]; then
+    echo "!!! no Python interpreter found. Activate your env, or set PYTHON=/path/to/python."
+    exit 1
+fi
+# Fail early and clearly if the env is missing a dependency, rather than mid-pipeline.
+if ! "$PYTHON" -c "import pandas, numpy, sklearn, yaml, scipy" 2>/dev/null; then
+    echo "!!! $PYTHON cannot import the core dependencies (pandas/numpy/scikit-learn/pyyaml/scipy)."
+    echo "    Activate the project env or: pip install -r requirements.txt"
+    exit 1
+fi
 
 echo "=================================================================="
 echo " Binder pipeline"
 echo "   dataset : $DATASET"
 echo "   scaler  : $SCALER"
-echo "   run RF  : $RUN_RF"
+echo "   python  : $PYTHON"
 echo "=================================================================="
 
 # ---------------------------------------------------------------------------
 # Create ONE run directory shared by every stage (config snapshot + manifest).
 # config/provenance.py prints the directory path on stdout.
 # ---------------------------------------------------------------------------
-RUN_DIR="$(python -m config.provenance)"
+RUN_DIR="$("$PYTHON" -m config.provenance)"
 export RUN_DIR
 LOG_DIR="$RUN_DIR/logs"
 mkdir -p "$LOG_DIR"
@@ -79,7 +93,7 @@ run_stage () {
     # Record the outcome in the manifest (RUN_DIR/name/status passed via env,
     # so paths with spaces or odd characters are handled safely).
     STAGE_NAME="$name" STAGE_STATUS="$([ "$ok" -eq 1 ] && echo ok || echo failed)" \
-    python -c "import os; from config.provenance import record_stage; \
+    "$PYTHON" -c "import os; from config.provenance import record_stage; \
 record_stage(os.environ['RUN_DIR'], os.environ['STAGE_NAME'], \
 status=os.environ['STAGE_STATUS'], extra={'log': 'logs/'+os.environ['STAGE_NAME']+'.log'})"
 
@@ -93,44 +107,31 @@ status=os.environ['STAGE_STATUS'], extra={'log': 'logs/'+os.environ['STAGE_NAME'
 # ---------------------------------------------------------------------------
 # Pipeline stages, in dependency order.
 # ---------------------------------------------------------------------------
-run_stage data_prep   python run_data_prep.py     # merge, label, split -> merged/eval/design.csv
-run_stage align       python run_align.py         # direction-align metrics
-run_stage scale       python run_scale.py         # scale (SCALER)
-run_stage qc          python run_qc.py            # integrity / missingness / non-finite reports
-run_stage profiling   python run_profiling.py     # PROFILING: composition, class dist, missingness, ranges
-run_stage evaluation  python run_evaluation.py    # BENCHMARK: which metrics separate binders
-run_stage thresholds  python run_thresholds.py    # REPORT-ONLY: derived vs literature cutoffs
-run_stage composite   python run_composite.py     # leakage-safe composite metric development
+run_stage data_prep   "$PYTHON" run_data_prep.py     # merge, label, split -> merged/eval/design.csv
+run_stage align       "$PYTHON" run_align.py         # direction-align metrics
+run_stage scale       "$PYTHON" run_scale.py         # scale (SCALER)
+run_stage qc          "$PYTHON" run_qc.py            # integrity / missingness / non-finite reports
+run_stage profiling   "$PYTHON" run_profiling.py     # PROFILING: composition, class dist, missingness, ranges
+run_stage evaluation  "$PYTHON" run_evaluation.py    # BENCHMARK: which metrics separate binders
+# run_thresholds.py is NOT a pipeline stage: it is a one-off, report-only comparison of
+# data-derived cutoffs against the literature values, and nothing downstream reads its output.
+# Run it by hand when the report is wanted:  DATASET=rf PYTHONPATH=. python run_thresholds.py
+run_stage composite   "$PYTHON" run_composite.py     # leakage-safe composite metric development
 
 # ---------------------------------------------------------------------------
-# Random Forest ranker (primary ranking method), kept as a notebook and run
-# headlessly. The executed copy is archived in the run directory.
+# Random Forest ranker (primary ranking method). Extracted from
+# notebooks/ranking_rf_final.ipynb into a plain stage script, so it needs no
+# jupyter and a failure stops the pipeline instead of being hidden.
 # ---------------------------------------------------------------------------
-if [ "$RUN_RF" = "1" ]; then
-    if ! command -v jupyter >/dev/null 2>&1; then
-        echo "!!! RUN_RF=1 but 'jupyter' is not installed (pip install -r requirements.txt),"
-        echo "    or set RUN_RF=0 to skip the RF stage."
-        exit 1
-    fi
-    # --allow-errors: the notebook keeps exploratory cells (with stale hardcoded paths) that would
-    # otherwise abort a headless run. The canonical PIPELINE STAGE cell runs FIRST and writes the
-    # outputs; --allow-errors lets the later exploratory cells fail without killing the pipeline.
-    run_stage ranking_rf jupyter nbconvert --to notebook --execute --allow-errors "$RF_NOTEBOOK" \
-        --output ranking_rf_final.executed.ipynb --output-dir "$RUN_DIR"
-    # Guard: because --allow-errors hides failures, confirm the canonical RF output actually exists.
-    run_stage ranking_rf_check python -c 'from config.datasets import cfg; from config.paths import EVALUATION_DIR; import sys; sys.exit(0 if (EVALUATION_DIR/cfg.name/"ranking"/"rf_design_scores.csv").exists() else 1)' 
-else
-    echo ""
-    echo "(skipping RF notebook stage; RUN_RF=$RUN_RF)"
-fi
+run_stage ranking_rf   "$PYTHON" run_ranking_rf.py    # RF: grouped-CV metrics + design p_binder
 
 # ---------------------------------------------------------------------------
 # Filter designs (reported funnel) and build the RF+composite consensus.
 # run_consensus tolerates a missing RF file (until the RF notebook is wired):
 # it then reports the composite-only ranking instead of failing.
 # ---------------------------------------------------------------------------
-run_stage filter      python run_filter.py        # feasibility screen: quality + literature developability gates
-run_stage consensus   python run_consensus.py     # RF (primary) + composite -> shortlist + disagreement
+run_stage filter      "$PYTHON" run_filter.py        # feasibility screen: quality + literature developability gates
+run_stage consensus   "$PYTHON" run_consensus.py     # RF (primary) + composite -> shortlist + disagreement
 
 echo ""
 echo "=================================================================="

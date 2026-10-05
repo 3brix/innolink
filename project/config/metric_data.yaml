@@ -1,174 +1,175 @@
 # metric_directions.yaml
-
-# TO DO: drop scale!
-# Reorganized by orthogonal redundancy groups to prevent collinearity hijacking.
+# ======================
+# Organized by orthogonal redundancy groups.
 #
-# direction: +1  ->  higher = better binder  (iptm, plddt, confidence...)
+# direction: +1  ->  higher = better binder  (iptm, plddt, global...)
 # direction: -1  ->  lower  = better binder  (dG, pae, rmsd, pde...)
 metrics:
   #interface:
-  af3_ipae: {direction: -1, family: ipae, category: interface, scale: error}
-  af3_iplddt: {direction: 1, family: iplddt, category: interface, scale: confidence}
-  af3_ipsae: {direction: 1, family: ipsae, category: interface, scale: confidence}
-  af3_iptm: {direction: 1, family: iptm, category: interface, scale: confidence}
-  af3_rank0_masif: {direction: 1, family: rank0_masif, category: interface, scale: confidence}
-  af3_pdockq: {direction: 1, family: pdockq, category: interface, scale: confidence}
-  af3_pdockq2: {direction: 1, family: pdockq2, category: interface, scale: confidence}
-  af3_lis: {direction: 1, family: lis, category: interface, scale: confidence}
-  cf_ipae: {direction: -1, family: ipae, category: interface, scale: error}
-  cf_iplddt: {direction: 1, family: iplddt, category: interface, scale: confidence}
-  cf_ipsae: {direction: 1, family: ipsae, category: interface, scale: confidence}
-  cf_iptm: {direction: 1, family: iptm, category: interface, scale: confidence}
-  cf_rank0_masif: {direction: 1, family: rank0_masif, category: interface, scale: confidence}
-  pred_ilddt: {direction: 1, family: iplddt, category: interface, scale: confidence}
-  cf_pdockq: {direction: 1, family: pdockq, category: interface, scale: confidence}
-  cf_pdockq2: {direction: 1, family: pdockq2, category: interface, scale: confidence}
-  cf_lis: {direction: 1, family: lis, category: interface, scale: confidence}
-  esmfold_ipae: {direction: -1, family: ipae, category: interface, scale: error}
-  esmfold_iplddt: {direction: 1, family: iplddt, category: interface, scale: confidence}
-  chai_unconstrained_iptm: {direction: 1, family: iptm, category: interface, scale: confidence}
-  chai_unconstrained_per_chain_ab_iptm_mean: {direction: 1, family: per_chain_ab_iptm_mean, category: interface, scale: confidence}
-  chai_unconstrained_interface_iptm: {direction: 1, family: interface_iptm, category: interface, scale: confidence}
-  chai_unconstrained_ipsae: {direction: 1, family: ipsae, category: interface, scale: confidence}
-  chai_unconstrained_pdockq: {direction: 1, family: pdockq, category: interface, scale: confidence}
-  chai_unconstrained_pdockq2: {direction: 1, family: pdockq2, category: interface, scale: confidence}
-  chai_unconstrained_lis: {direction: 1, family: lis, category: interface, scale: confidence}
-  chai_unconstrained_per_chain_pair_iptm: {direction: 1, family: per_chain_pair_iptm, category: interface, scale: confidence}
-  chai_constrained_iptm: {direction: 1, family: iptm, category: interface, scale: confidence}
-  chai_constrained_per_chain_ab_iptm_mean: {direction: 1, family: per_chain_ab_iptm_mean, category: interface, scale: confidence}
-  chai_constrained_interface_iptm: {direction: 1, family: interface_iptm, category: interface, scale: confidence}
-  chai_constrained_ipsae: {direction: 1, family: ipsae, category: interface, scale: confidence}
-  chai_constrained_pdockq: {direction: 1, family: pdockq, category: interface, scale: confidence}
-  chai_constrained_pdockq2: {direction: 1, family: pdockq2, category: interface, scale: confidence}
-  chai_constrained_lis: {direction: 1, family: lis, category: interface, scale: confidence}
-  chai_constrained_per_chain_pair_iptm: {direction: 1, family: per_chain_pair_iptm, category: interface, scale: confidence}
-  boltz_free_iptm: {direction: 1, family: iptm, category: interface, scale: confidence}
-  boltz_free_iplddt: {direction: 1, family: iplddt, category: interface, scale: confidence}
-  boltz_free_ipde: {direction: -1, family: ipde, category: interface, scale: error}
-  boltz_free_per_chain_pair_iptm: {direction: 1, family: per_chain_pair_iptm, category: interface, scale: confidence}
-  boltz_free_ipsae: {direction: 1, family: ipsae, category: interface, scale: confidence}
-  boltz_free_pdockq: {direction: 1, family: pdockq, category: interface, scale: confidence}
-  boltz_free_pdockq2: {direction: 1, family: pdockq2, category: interface, scale: confidence}
-  boltz_free_lis: {direction: 1, family: lis, category: interface, scale: confidence}
-  boltz_template_iptm: {direction: 1, family: iptm, category: interface, scale: confidence}
-  boltz_template_iplddt: {direction: 1, family: iplddt, category: interface, scale: confidence}
-  boltz_template_ipde: {direction: -1, family: ipde, category: interface, scale: error}
-  boltz_template_per_chain_pair_iptm: {direction: 1, family: per_chain_pair_iptm, category: interface, scale: confidence}
-  boltz_template_ipsae: {direction: 1, family: ipsae, category: interface, scale: confidence}
-  boltz_template_pdockq: {direction: 1, family: pdockq, category: interface, scale: confidence}
-  boltz_template_pdockq2: {direction: 1, family: pdockq2, category: interface, scale: confidence}
-  boltz_template_lis: {direction: 1, family: lis, category: interface, scale: confidence}
-  esmfold2_ipae: {direction: -1, family: ipae, category: interface, scale: error}
-  esmfold2_iplddt: {direction: 1, family: iplddt, category: interface, scale: confidence}
-  esmfold2_iptm: {direction: 1, family: iptm, category: interface, scale: confidence}
+  af3_ipae: {direction: -1, family: ipae, category: interface, reference: 10}
+  af3_iplddt: {direction: 1, family: iplddt, category: interface, reference: 0.7}
+  af3_ipsae: {direction: 1, family: ipsae, category: interface, reference: 0.61}
+  af3_iptm: {direction: 1, family: iptm, category: interface, reference: 0.7}
+  af3_rank0_masif: {direction: 1, family: score, category: interface, reference: 0.9}
+  af3_pdockq: {direction: 1, family: pdockq, category: interface, reference: 0.5}
+  af3_pdockq2: {direction: 1, family: pdockq2, category: interface, reference: 0.5}
+  af3_lis: {direction: 1, family: lis, category: interface, reference: 0.23}
+  cf_ipae: {direction: -1, family: ipae, category: interface, reference: 10}
+  cf_iplddt: {direction: 1, family: iplddt, category: interface, reference: 0.7}
+  cf_ipsae: {direction: 1, family: ipsae, category: interface, reference: 0.61}
+  cf_iptm: {direction: 1, family: iptm, category: interface, reference: 0.7}
+  cf_rank0_masif: {direction: 1, family: score, category: interface, reference: 0.9}
+  pred_ilddt: {direction: 1, family: iplddt, category: interface, reference: 0.7}
+  cf_pdockq: {direction: 1, family: pdockq, category: interface, reference: 0.5}
+  cf_pdockq2: {direction: 1, family: pdockq2, category: interface, reference: 0.5}
+  cf_lis: {direction: 1, family: lis, category: interface, reference: 0.23}
+  esmfold_ipae: {direction: -1, family: ipae, category: interface, reference: 10}
+  esmfold_iplddt: {direction: 1, family: iplddt, category: interface, reference: 0.7}
+  chai_unconstrained_iptm: {direction: 1, family: iptm, category: interface, reference: 0.7}
+  chai_unconstrained_per_chain_ab_iptm_mean: {direction: 1, family: iptm, category: interface, reference: 0.7}
+  chai_unconstrained_interface_iptm: {direction: 1, family: iptm, category: interface, reference: 0.7}
+  chai_unconstrained_ipsae: {direction: 1, family: ipsae, category: interface, reference: 0.61}
+  chai_unconstrained_pdockq: {direction: 1, family: pdockq, category: interface, reference: 0.5}
+  chai_unconstrained_pdockq2: {direction: 1, family: pdockq2, category: interface, reference: 0.5}
+  chai_unconstrained_lis: {direction: 1, family: lis, category: interface, reference: 0.23}
+  chai_unconstrained_per_chain_pair_iptm: {direction: 1, family: iptm, category: interface, reference: 0.7}
+  chai_constrained_iptm: {direction: 1, family: iptm, category: interface, reference: 0.7}
+  chai_constrained_per_chain_ab_iptm_mean: {direction: 1, family: iptm, category: interface, reference: 0.7}
+  chai_constrained_interface_iptm: {direction: 1, family: iptm, category: interface, reference: 0.7}
+  chai_constrained_ipsae: {direction: 1, family: ipsae, category: interface, reference: 0.61}
+  chai_constrained_pdockq: {direction: 1, family: pdockq, category: interface, reference: 0.5}
+  chai_constrained_pdockq2: {direction: 1, family: pdockq2, category: interface, reference: 0.5}
+  chai_constrained_lis: {direction: 1, family: lis, category: interface, reference: 0.23}
+  chai_constrained_per_chain_pair_iptm: {direction: 1, family: iptm, category: interface, reference: 0.7}
+  boltz_free_iptm: {direction: 1, family: iptm, category: interface, reference: 0.7}
+  boltz_free_iplddt: {direction: 1, family: iplddt, category: interface, reference: 0.7}
+  boltz_free_ipde: {direction: -1, family: ipde, category: interface, reference: 10}
+  boltz_free_per_chain_pair_iptm: {direction: 1, family: iptm, category: interface, reference: 0.7}
+  boltz_free_ipsae: {direction: 1, family: ipsae, category: interface, reference: 0.61}
+  boltz_free_pdockq: {direction: 1, family: pdockq, category: interface, reference: 0.5}
+  boltz_free_pdockq2: {direction: 1, family: pdockq2, category: interface, reference: 0.5}
+  boltz_free_lis: {direction: 1, family: lis, category: interface, reference: 0.23}
+  boltz_template_iptm: {direction: 1, family: iptm, category: interface, reference: 0.7}
+  boltz_template_iplddt: {direction: 1, family: iplddt, category: interface, reference: 0.7}
+  boltz_template_ipde: {direction: -1, family: ipde, category: interface, reference: 10}
+  boltz_template_per_chain_pair_iptm: {direction: 1, family: iptm, category: interface, reference: 0.7}
+  boltz_template_ipsae: {direction: 1, family: ipsae, category: interface, reference: 0.61}
+  boltz_template_pdockq: {direction: 1, family: pdockq, category: interface, reference: 0.5}
+  boltz_template_pdockq2: {direction: 1, family: pdockq2, category: interface, reference: 0.5}
+  boltz_template_lis: {direction: 1, family: lis, category: interface, reference: 0.23}
+  esmfold2_ipae: {direction: -1, family: ipae, category: interface, reference: 10}
+  esmfold2_iplddt: {direction: 1, family: iplddt, category: interface, reference: 0.7}
+  esmfold2_iptm: {direction: 1, family: iptm, category: interface, reference: 0.7}
 
   #monomer:
-  af3_pae: {direction: -1, family: pae, category: confidence, scale: error}
-  af3_plddt: {direction: 1, family: plddt, category: confidence, scale: confidence}
-  af3_ptm: {direction: 1, family: ptm, category: confidence, scale: confidence}
-  af3_ranking_score: {direction: 1, family: ranking_score, category: confidence, scale: confidence}
-  cf_pae: {direction: -1, family: pae, category: confidence, scale: error}
-  cf_plddt: {direction: 1, family: plddt, category: confidence, scale: confidence}
-  cf_ptm: {direction: 1, family: ptm, category: confidence, scale: confidence}
-  pred_lddt: {direction: 1, family: plddt, category: confidence, scale: confidence}
-  esmfold_plddt: {direction: 1, family: plddt, category: confidence, scale: confidence}
-  esmfold_pae: {direction: -1, family: pae, category: confidence, scale: error}
-  esmfold_ptm: {direction: 1, family: ptm, category: confidence, scale: confidence}
-  chai_unconstrained_score: {direction: 1, family: score, category: confidence, scale: confidence}
-  chai_unconstrained_aggregate_score: {direction: 1, family: aggregate_score, category: confidence, scale: confidence}
-  chai_unconstrained_ptm: {direction: 1, family: ptm, category: confidence, scale: confidence}
-  chai_unconstrained_per_chain_ptm_mean: {direction: 1, family: per_chain_ptm_mean, category: confidence, scale: confidence}
-  chai_unconstrained_per_chain_ptm: {direction: 1, family: per_chain_ptm, category: confidence, scale: confidence}
-  chai_constrained_score: {direction: 1, family: score, category: confidence, scale: confidence}
-  chai_constrained_aggregate_score: {direction: 1, family: aggregate_score, category: confidence, scale: confidence}
-  chai_constrained_ptm: {direction: 1, family: ptm, category: confidence, scale: confidence}
-  chai_constrained_per_chain_ptm_mean: {direction: 1, family: per_chain_ptm_mean, category: confidence, scale: confidence}
-  chai_constrained_per_chain_ptm: {direction: 1, family: per_chain_ptm, category: confidence, scale: confidence}
-  boltz_free_confidence_score: {direction: 1, family: confidence_score, category: confidence, scale: confidence}
-  boltz_free_ptm: {direction: 1, family: ptm, category: confidence, scale: confidence}
-  boltz_free_plddt: {direction: 1, family: plddt, category: confidence, scale: confidence}
-  boltz_free_pde: {direction: -1, family: pde, category: confidence, scale: error}
-  boltz_template_confidence_score: {direction: 1, family: confidence_score, category: confidence, scale: confidence}
-  boltz_template_ptm: {direction: 1, family: ptm, category: confidence, scale: confidence}
-  boltz_template_plddt: {direction: 1, family: plddt, category: confidence, scale: confidence}
-  boltz_template_pde: {direction: -1, family: pde, category: confidence, scale: error}
-  esmfold2_plddt: {direction: 1, family: plddt, category: confidence, scale: confidence}
-  esmfold2_pae: {direction: -1, family: pae, category: confidence, scale: error}
-  esmfold2_ptm: {direction: 1, family: ptm, category: confidence, scale: confidence}
+  af3_pae: {direction: -1, family: pae, category: global, reference: 10}
+  af3_plddt: {direction: 1, family: plddt, category: global, reference: 0.7}
+  af3_ptm: {direction: 1, family: ptm, category: global, reference: 0.7}
+  af3_ranking_score: {direction: 1, family: score, category: global}
+  cf_pae: {direction: -1, family: pae, category: global, reference: 10}
+  cf_plddt: {direction: 1, family: plddt, category: global, reference: 0.7}
+  cf_ptm: {direction: 1, family: ptm, category: global, reference: 0.7}
+  pred_lddt: {direction: 1, family: plddt, category: global, reference: 0.7}
+  esmfold_plddt: {direction: 1, family: plddt, category: global, reference: 0.7}
+  esmfold_pae: {direction: -1, family: pae, category: global, reference: 10}
+  esmfold_ptm: {direction: 1, family: ptm, category: global, reference: 0.7}
+  chai_unconstrained_score: {direction: 1, family: score, category: global}
+  chai_unconstrained_aggregate_score: {direction: 1, family: aggregate_score, category: global, reference: 0.9}
+  chai_unconstrained_ptm: {direction: 1, family: ptm, category: global, reference: 0.7}
+  chai_unconstrained_per_chain_ptm_mean: {direction: 1, family: per_chain_ptm_mean, category: global, reference: 0.7}
+  chai_unconstrained_per_chain_ptm: {direction: 1, family: per_chain_ptm, category: global, reference: 0.7}
+  chai_constrained_score: {direction: 1, family: score, category: global}
+  chai_constrained_aggregate_score: {direction: 1, family: aggregate_score, category: global, reference: 0.9}
+  chai_constrained_ptm: {direction: 1, family: ptm, category: global, reference: 0.7}
+  chai_constrained_per_chain_ptm_mean: {direction: 1, family: ptm, category: global, reference: 0.7}
+  chai_constrained_per_chain_ptm: {direction: 1, family: ptm, category: global, reference: 0.7}
+  boltz_free_confidence_score: {direction: 1, family: score, category: global, reference: 0.9}
+  boltz_free_ptm: {direction: 1, family: ptm, category: global, reference: 0.7}
+  boltz_free_plddt: {direction: 1, family: plddt, category: global, reference: 0.7}
+  boltz_free_pde: {direction: -1, family: pde, category: global, reference: 10}
+  boltz_template_confidence_score: {direction: 1, family: confidence_score, category: global, reference: 0.9}
+  boltz_template_ptm: {direction: 1, family: ptm, category: global, reference: 0.7}
+  boltz_template_plddt: {direction: 1, family: plddt, category: global, reference: 0.7}
+  boltz_template_pde: {direction: -1, family: pde, category: global, reference: 10}
+  esmfold2_plddt: {direction: 1, family: plddt, category: global, reference: 0.7}
+  esmfold2_pae: {direction: -1, family: pae, category: global, reference: 10}
+  esmfold2_ptm: {direction: 1, family: ptm, category: global, reference: 0.7}
 
   #energy:
-  af3_interface_dG: {direction: -1, family: interface_dG, category: energy, scale: energy}
-  af3_interface_dG_SASA_ratio: {direction: -1, family: interface_dG_SASA_ratio, category: energy, scale: ratio}
-  af3_pyros_binder_score: {direction: -1, family: pyros_binder_score, category: energy, scale: energy}
-  cf_interface_dG: {direction: -1, family: interface_dG, category: energy, scale: energy}
-  cf_interface_dG_SASA_ratio: {direction: -1, family: interface_dG_SASA_ratio, category: energy, scale: ratio}
-  cf_pyros_binder_score: {direction: -1, family: pyros_binder_score, category: energy, scale: energy}
-  af3_esm3dg_dg: {direction: -1, family: esm3dg_dg, category: energy, scale: energy}
-  af3_esm3dg_dg_a: {direction: -1, family: esm3dg_dg_a, category: energy, scale: energy}
-  af3_esm3dg_dg_b: {direction: -1, family: esm3dg_dg_b, category: energy, scale: energy}
-  af3_esm3dg_dg_std: {direction: -1, family: esm3dg_dg_std, category: energy, scale: energy}
-  cf_esm3dg_dg: {direction: -1, family: esm3dg_dg, category: energy, scale: energy}
-  cf_esm3dg_dg_a: {direction: -1, family: esm3dg_dg_a, category: energy, scale: energy}
-  cf_esm3dg_dg_b: {direction: -1, family: esm3dg_dg_b, category: energy, scale: energy}
-  cf_esm3dg_dg_std: {direction: -1, family: esm3dg_dg_std, category: energy, scale: energy}
-  esmfold_esm3dg_dg: {direction: -1, family: esm3dg_dg, category: energy, scale: energy}
-  esmfold_esm3dg_dg_a: {direction: -1, family: esm3dg_dg_a, category: energy, scale: energy}
-  esmfold_esm3dg_dg_b: {direction: -1, family: esm3dg_dg_b, category: energy, scale: energy}
-  esmfold_esm3dg_dg_std: {direction: -1, family: esm3dg_dg_std, category: energy, scale: energy}
-  esmfold2_esm3dg_dg: {direction: -1, family: esm3dg_dg, category: energy, scale: energy}
-  esmfold2_esm3dg_dg_a: {direction: -1, family: esm3dg_dg_a, category: energy, scale: energy}
-  esmfold2_esm3dg_dg_b: {direction: -1, family: esm3dg_dg_b, category: energy, scale: energy}
-  esmfold2_esm3dg_dg_std: {direction: -1, family: esm3dg_dg_std, category: energy, scale: energy}
-  chai_unconstrained_esm3dg_dg: {direction: -1, family: esm3dg_dg, category: energy, scale: energy}
-  chai_unconstrained_esm3dg_dg_a: {direction: -1, family: esm3dg_dg_a, category: energy, scale: energy}
-  chai_unconstrained_esm3dg_dg_b: {direction: -1, family: esm3dg_dg_b, category: energy, scale: energy}
-  chai_unconstrained_esm3dg_dg_std: {direction: -1, family: esm3dg_dg_std, category: energy, scale: energy}
-  chai_constrained_esm3dg_dg: {direction: -1, family: esm3dg_dg, category: energy, scale: energy}
-  chai_constrained_esm3dg_dg_a: {direction: -1, family: esm3dg_dg_a, category: energy, scale: energy}
-  chai_constrained_esm3dg_dg_b: {direction: -1, family: esm3dg_dg_b, category: energy, scale: energy}
-  chai_constrained_esm3dg_dg_std: {direction: -1, family: esm3dg_dg_std, category: energy, scale: energy}
-  boltz_free_esm3dg_dg: {direction: -1, family: esm3dg_dg, category: energy, scale: energy}
-  boltz_free_esm3dg_dg_a: {direction: -1, family: esm3dg_dg_a, category: energy, scale: energy}
-  boltz_free_esm3dg_dg_b: {direction: -1, family: esm3dg_dg_b, category: energy, scale: energy}
-  boltz_free_esm3dg_dg_std: {direction: -1, family: esm3dg_dg_std, category: energy, scale: energy}
-  boltz_template_esm3dg_dg: {direction: -1, family: esm3dg_dg, category: energy, scale: energy}
-  boltz_template_esm3dg_dg_a: {direction: -1, family: esm3dg_dg_a, category: energy, scale: energy}
-  boltz_template_esm3dg_dg_b: {direction: -1, family: esm3dg_dg_b, category: energy, scale: energy}
-  boltz_template_esm3dg_dg_std: {direction: -1, family: esm3dg_dg_std, category: energy, scale: energy}
+  af3_interface_dG: {direction: -1, family: interface_dG, category: energy, reference: -10}
+  af3_interface_dSASA: {direction: 1, family: interface_dSASA, category: energy, reference: [800, 1500]}
+  af3_interface_dG_SASA_ratio: {direction: -1, family: interface_dG_SASA_ratio, category: energy, reference: 0}
+  af3_pyros_binder_score: {direction: -1, family: pyros_binder_score, category: energy, reference: 0}
+  cf_interface_dG: {direction: -1, family: interface_dG, category: energy, reference: -10}
+  cf_interface_dSASA: {direction: 1, family: interface_dSASA, category: energy, reference: [800, 1500]}
+  cf_interface_dG_SASA_ratio: {direction: -1, family: interface_dG_SASA_ratio, category: energy, reference: 0}
+  cf_pyros_binder_score: {direction: -1, family: pyros_binder_score, category: energy, reference: 0}
+  af3_esm3dg_dg: {direction: -1, family: esm3dg_dg, category: energy, reference: 3.8}
+  af3_esm3dg_dg_a: {direction: -1, family: esm3dg_dg_a, category: energy, reference: 3}
+  af3_esm3dg_dg_b: {direction: -1, family: esm3dg_dg_b, category: energy, reference: 1.0}
+  af3_esm3dg_dg_std: {direction: -1, family: esm3dg_dg_std, category: energy, reference: 0.2}
+  cf_esm3dg_dg: {direction: -1, family: esm3dg_dg, category: energy, reference: 3.8}
+  cf_esm3dg_dg_a: {direction: -1, family: esm3dg_dg_a, category: energy, reference: 3}
+  cf_esm3dg_dg_b: {direction: -1, family: esm3dg_dg_b, category: energy, reference: 1.0}
+  cf_esm3dg_dg_std: {direction: -1, family: esm3dg_dg_std, category: energy, reference: 0.2}
+  esmfold_esm3dg_dg: {direction: -1, family: esm3dg_dg, category: energy, reference: 3.8}
+  esmfold_esm3dg_dg_a: {direction: -1, family: esm3dg_dg_a, category: energy, reference: 3}
+  esmfold_esm3dg_dg_b: {direction: -1, family: esm3dg_dg_b, category: energy, reference: 1.0}
+  esmfold_esm3dg_dg_std: {direction: -1, family: esm3dg_dg_std, category: energy, reference: 0.2}
+  esmfold2_esm3dg_dg: {direction: -1, family: esm3dg_dg, category: energy, reference: 3.8}
+  esmfold2_esm3dg_dg_a: {direction: -1, family: esm3dg_dg_a, category: energy, reference: 3}
+  esmfold2_esm3dg_dg_b: {direction: -1, family: esm3dg_dg_b, category: energy, reference: 1.0}
+  esmfold2_esm3dg_dg_std: {direction: -1, family: esm3dg_dg_std, category: energy, reference: 0.2}
+  chai_unconstrained_esm3dg_dg: {direction: -1, family: esm3dg_dg, category: energy, reference: 3.8}
+  chai_unconstrained_esm3dg_dg_a: {direction: -1, family: esm3dg_dg_a, category: energy, reference: 3}
+  chai_unconstrained_esm3dg_dg_b: {direction: -1, family: esm3dg_dg_b, category: energy, reference: 1.0}
+  chai_unconstrained_esm3dg_dg_std: {direction: -1, family: esm3dg_dg_std, category: energy, reference: 0.2}
+  chai_constrained_esm3dg_dg: {direction: -1, family: esm3dg_dg, category: energy, reference: 3.8}
+  chai_constrained_esm3dg_dg_a: {direction: -1, family: esm3dg_dg_a, category: energy, reference: 3}
+  chai_constrained_esm3dg_dg_b: {direction: -1, family: esm3dg_dg_b, category: energy, reference: 1.0}
+  chai_constrained_esm3dg_dg_std: {direction: -1, family: esm3dg_dg_std, category: energy, reference: 0.2}
+  boltz_free_esm3dg_dg: {direction: -1, family: esm3dg_dg, category: energy, reference: 3.8}
+  boltz_free_esm3dg_dg_a: {direction: -1, family: esm3dg_dg_a, category: energy, reference: 3}
+  boltz_free_esm3dg_dg_b: {direction: -1, family: esm3dg_dg_b, category: energy, reference: 1.0}
+  boltz_free_esm3dg_dg_std: {direction: -1, family: esm3dg_dg_std, category: energy, reference: 0.2}
+  boltz_template_esm3dg_dg: {direction: -1, family: esm3dg_dg, category: energy, reference: 3.8}
+  boltz_template_esm3dg_dg_a: {direction: -1, family: esm3dg_dg_a, category: energy, reference: 3}
+  boltz_template_esm3dg_dg_b: {direction: -1, family: esm3dg_dg_b, category: energy, reference: 1.0}
+  boltz_template_esm3dg_dg_std: {direction: -1, family: esm3dg_dg_std, category: energy, reference: 0.2}
 
   #sequence:
-  af3_mpnn_confidence: {direction: 1, family: mpnn_confidence, category: sequence, scale: confidence}
-  af3_mpnn_nll: {direction: -1, family: mpnn_nll, category: sequence, scale: likelihood}
-  af3_mpnn_nll_a: {direction: -1, family: mpnn_nll_a, category: sequence, scale: likelihood}
-  af3_mpnn_nll_b: {direction: -1, family: mpnn_nll_b, category: sequence, scale: likelihood}
-  cf_mpnn_confidence: {direction: 1, family: mpnn_confidence, category: sequence, scale: confidence}
-  cf_mpnn_nll: {direction: -1, family: mpnn_nll, category: sequence, scale: likelihood}
-  cf_mpnn_nll_a: {direction: -1, family: mpnn_nll_a, category: sequence, scale: likelihood}
-  cf_mpnn_nll_b: {direction: -1, family: mpnn_nll_b, category: sequence, scale: likelihood}
-  esmfold_mpnn_confidence: {direction: 1, family: mpnn_confidence, category: sequence, scale: confidence}
-  esmfold_mpnn_nll: {direction: -1, family: mpnn_nll, category: sequence, scale: likelihood}
-  esmfold_mpnn_nll_a: {direction: -1, family: mpnn_nll_a, category: sequence, scale: likelihood}
-  esmfold_mpnn_nll_b: {direction: -1, family: mpnn_nll_b, category: sequence, scale: likelihood}
-  esmfold2_mpnn_confidence: {direction: 1, family: mpnn_confidence, category: sequence, scale: confidence}
-  esmfold2_mpnn_nll: {direction: -1, family: mpnn_nll, category: sequence, scale: likelihood}
-  esmfold2_mpnn_nll_a: {direction: -1, family: mpnn_nll_a, category: sequence, scale: likelihood}
-  esmfold2_mpnn_nll_b: {direction: -1, family: mpnn_nll_b, category: sequence, scale: likelihood}
-  chai_unconstrained_mpnn_confidence: {direction: 1, family: mpnn_confidence, category: sequence, scale: confidence}
-  chai_unconstrained_mpnn_nll: {direction: -1, family: mpnn_nll, category: sequence, scale: likelihood}
-  chai_unconstrained_mpnn_nll_a: {direction: -1, family: mpnn_nll_a, category: sequence, scale: likelihood}
-  chai_unconstrained_mpnn_nll_b: {direction: -1, family: mpnn_nll_b, category: sequence, scale: likelihood}
-  chai_constrained_mpnn_confidence: {direction: 1, family: mpnn_confidence, category: sequence, scale: confidence}
-  chai_constrained_mpnn_nll: {direction: -1, family: mpnn_nll, category: sequence, scale: likelihood}
-  chai_constrained_mpnn_nll_a: {direction: -1, family: mpnn_nll_a, category: sequence, scale: likelihood}
-  chai_constrained_mpnn_nll_b: {direction: -1, family: mpnn_nll_b, category: sequence, scale: likelihood}
-  boltz_free_mpnn_confidence: {direction: 1, family: mpnn_confidence, category: sequence, scale: confidence}
-  boltz_free_mpnn_nll: {direction: -1, family: mpnn_nll, category: sequence, scale: likelihood}
-  boltz_free_mpnn_nll_a: {direction: -1, family: mpnn_nll_a, category: sequence, scale: likelihood}
-  boltz_free_mpnn_nll_b: {direction: -1, family: mpnn_nll_b, category: sequence, scale: likelihood}
-  boltz_template_mpnn_confidence: {direction: 1, family: mpnn_confidence, category: sequence, scale: confidence}
-  boltz_template_mpnn_nll: {direction: -1, family: mpnn_nll, category: sequence, scale: likelihood}
-  boltz_template_mpnn_nll_a: {direction: -1, family: mpnn_nll_a, category: sequence, scale: likelihood}
-  boltz_template_mpnn_nll_b: {direction: -1, family: mpnn_nll_b, category: sequence, scale: likelihood}
+  af3_mpnn_confidence: {direction: 1, family: mpnn_confidence, category: sequence, reference: 0.12}
+  af3_mpnn_nll: {direction: -1, family: mpnn_nll, category: sequence, reference: 1.2}
+  af3_mpnn_nll_a: {direction: -1, family: mpnn_nll_a, category: sequence, reference: 2.2}
+  af3_mpnn_nll_b: {direction: -1, family: mpnn_nll_b, category: sequence, reference: 1.2}
+  cf_mpnn_confidence: {direction: 1, family: mpnn_confidence, category: sequence, reference: 0.12}
+  cf_mpnn_nll: {direction: -1, family: mpnn_nll, category: sequence, reference: 1.2}
+  cf_mpnn_nll_a: {direction: -1, family: mpnn_nll_a, category: sequence, reference: 2.2}
+  cf_mpnn_nll_b: {direction: -1, family: mpnn_nll_b, category: sequence, reference: 1.2}
+  esmfold_mpnn_confidence: {direction: 1, family: mpnn_confidence, category: sequence, reference: 0.12}
+  esmfold_mpnn_nll: {direction: -1, family: mpnn_nll, category: sequence, reference: 1.2}
+  esmfold_mpnn_nll_a: {direction: -1, family: mpnn_nll_a, category: sequence, reference: 2.2}
+  esmfold_mpnn_nll_b: {direction: -1, family: mpnn_nll_b, category: sequence, reference: 1.2}
+  esmfold2_mpnn_confidence: {direction: 1, family: mpnn_confidence, category: sequence, reference: 0.12}
+  esmfold2_mpnn_nll: {direction: -1, family: mpnn_nll, category: sequence, reference: 1.2}
+  esmfold2_mpnn_nll_a: {direction: -1, family: mpnn_nll_a, category: sequence, reference: 2.2}
+  esmfold2_mpnn_nll_b: {direction: -1, family: mpnn_nll_b, category: sequence, reference: 1.2}
+  chai_unconstrained_mpnn_confidence: {direction: 1, family: mpnn_confidence, category: sequence, reference: 0.12}
+  chai_unconstrained_mpnn_nll: {direction: -1, family: mpnn_nll, category: sequence, reference: 1.2}
+  chai_unconstrained_mpnn_nll_a: {direction: -1, family: mpnn_nll_a, category: sequence, reference: 2.2}
+  chai_unconstrained_mpnn_nll_b: {direction: -1, family: mpnn_nll_b, category: sequence, reference: 1.2}
+  chai_constrained_mpnn_confidence: {direction: 1, family: mpnn_confidence, category: sequence, reference: 0.12}
+  chai_constrained_mpnn_nll: {direction: -1, family: mpnn_nll, category: sequence, reference: 1.2}
+  chai_constrained_mpnn_nll_a: {direction: -1, family: mpnn_nll_a, category: sequence, reference: 2.2}
+  chai_constrained_mpnn_nll_b: {direction: -1, family: mpnn_nll_b, category: sequence, reference: 1.2}
+  boltz_free_mpnn_confidence: {direction: 1, family: mpnn_confidence, category: sequence, reference: 0.12}
+  boltz_free_mpnn_nll: {direction: -1, family: mpnn_nll, category: sequence, reference: 1.2}
+  boltz_free_mpnn_nll_a: {direction: -1, family: mpnn_nll_a, category: sequence, reference: 2.2}
+  boltz_free_mpnn_nll_b: {direction: -1, family: mpnn_nll_b, category: sequence, reference: 1.2}
+  boltz_template_mpnn_confidence: {direction: 1, family: mpnn_confidence, category: sequence, reference: 0.12}
+  boltz_template_mpnn_nll: {direction: -1, family: mpnn_nll, category: sequence, reference: 1.2}
+  boltz_template_mpnn_nll_a: {direction: -1, family: mpnn_nll_a, category: sequence, reference: 2.2}
+  boltz_template_mpnn_nll_b: {direction: -1, family: mpnn_nll_b, category: sequence, reference: 1.2}
 
   #geometry:
   cf_af3_rmsd: {direction: -1, family: rmsd, category: geometry, scale: distance}
@@ -177,33 +178,34 @@ metrics:
   af3_rank: {direction: -1, family: rank, category: ranking, scale: rank}
   cf_rank: {direction: -1, family: rank, category: ranking, scale: rank}
 
-  af3_interface_sc: {direction: 1, family: interface_sc, category: developability, scale: developability}
-  cf_interface_sc: {direction: 1, family: interface_sc, category: developability, scale: developability}
-  af3_interface_packstat: {direction: 1, family: interface_packstat, category: developability, scale: developability}
-  cf_interface_packstat: {direction: 1, family: interface_packstat, category: developability, scale: developability}
-  af3_surface_hydrophobicity: {direction: 1, family: surface_hydrophobicity, category: developability, scale: developability}
-  cf_surface_hydrophobicity: {direction: 1, family: surface_hydrophobicity, category: developability, scale: developability}
+  #developability
+  af3_interface_sc: {direction: 1, family: interface_sc, category: developability, reference: 0.6}
+  cf_interface_sc: {direction: 1, family: interface_sc, category: developability, reference: 0.6}
+  af3_interface_packstat: {direction: 1, family: interface_packstat, category: developability, reference: 0.5}
+  cf_interface_packstat: {direction: 1, family: interface_packstat, category: developability, reference: 0.5}
+  af3_surface_hydrophobicity: {direction: 1, family: surface_hydrophobicity, category: developability, reference: [0.25, 0.4]}
+  cf_surface_hydrophobicity: {direction: 1, family: surface_hydrophobicity, category: developability, reference: [0.25, 0.4]}
 
-  af3_interface_hydrophobicity: {direction: 1, family: interface_hydrophobicity, category: developability, scale: developability}
-  cf_interface_hydrophobicity: {direction: 1, family: interface_hydrophobicity, category: developability, scale: developability}
-  af3_interface_hbonds: {direction: 1, family: interface_hbonds, category: developability, scale: developability}
-  cf_interface_hbonds: {direction: 1, family: interface_hbonds, category: developability, scale: developability}
-  af3_interface_delta_unsat_hbonds: {direction: -1, family: delta_unsat_hbonds, category: developability, scale: developability}
-  cf_interface_delta_unsat_hbonds: {direction: -1, family: delta_unsat_hbonds, category: developability, scale: developability}
-  af3_interface_nres: {direction: 1, family: interface_nres, category: developability, scale: developability}
-  cf_interface_nres: {direction: 1, family: interface_nres, category: developability, scale: developability}
+  af3_interface_hydrophobicity: {direction: 1, family: interface_hydrophobicity, category: developability}
+  cf_interface_hydrophobicity: {direction: 1, family: interface_hydrophobicity, category: developability}
+  af3_interface_interface_hbonds: {direction: 1, family: interface_hbonds, category: developability, reference: 1}
+  cf_interface_interface_hbonds: {direction: 1, family: interface_hbonds, category: developability, reference: 1}
+  af3_interface_delta_unsat_hbonds: {direction: -1, family: delta_unsat_hbonds, category: developability, reference: 4}
+  cf_interface_delta_unsat_hbonds: {direction: -1, family: delta_unsat_hbonds, category: developability, reference: 4}
+  af3_interface_nres: {direction: 1, family: interface_nres, category: developability, reference: 4}
+  cf_interface_nres: {direction: 1, family: interface_nres, category: developability, reference: 4}
 
 
 
-  af3_sap_score: {direction: -1, family: sap, category: developability, scale: developability}
-  cf_sap_score: {direction: -1, family: sap, category: developability, scale: developability}
-  af3_sap_score_complex: {direction: -1, family: sap, category: developability, scale: developability}
-  cf_sap_score_complex: {direction: -1, family: sap, category: developability, scale: developability}
-  af3_sap_score_monomer: {direction: -1, family: sap, category: developability, scale: developability}
-  cf_sap_score_monomer: {direction: -1, family: sap, category: developability, scale: developability}
-  af3_dsap: {direction: -1, family: dsap, category: developability, scale: developability}
-  cf_dsap: {direction: -1, family: dsap, category: developability, scale: developability}
-  af3_hydrophobic_sasa: {direction: 1, family: hydrophobic_sasa, category: developability, scale: developability}
-  cf_hydrophobic_sasa: {direction: 1, family: hydrophobic_sasa, category: developability, scale: developability}
-  af3_net_charge: {direction: 1, family: net_charge, category: developability, scale: developability}
-  cf_net_charge: {direction: 1, family: net_charge, category: developability, scale: developability}
+  af3_sap_score: {direction: -1, family: sap, category: developability, reference: 0.4}
+  cf_sap_score: {direction: -1, family: sap, category: developability, reference: 0.4}
+  af3_sap_score_complex: {direction: -1, family: sap, category: developability, reference: 0.4}
+  cf_sap_score_complex: {direction: -1, family: sap, category: developability, reference: 0.4}
+  af3_sap_score_unbound_cframe: {direction: -1, family: sap, category: developability, reference: 0.4}
+  cf_sap_score_unbound_cframe: {direction: -1, family: sap, category: developability, reference: 0.4}
+  af3_dsap: {direction: -1, family: dsap, category: developability, reference: 0}
+  cf_dsap: {direction: -1, family: dsap, category: developability, reference: 0}
+  af3_hydrophobic_sasa: {direction: -1, family: hydrophobic_sasa, category: developability}
+  cf_hydrophobic_sasa: {direction: -1, family: hydrophobic_sasa, category: developability}
+  af3_net_charge: {direction: 1, family: net_charge, category: developability, reference: [-4, 4]}
+  cf_net_charge: {direction: 1, family: net_charge, category: developability, reference: [-4, 4]}

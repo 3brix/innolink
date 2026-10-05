@@ -1,23 +1,13 @@
-"""
-Run provenance: snapshot the configuration used for a run and record what ran.
+"""Run provenance: snapshot the config used for a run and record what ran. No dependencies.
 
-Reproducibility helper with no third-party dependencies. A "run" is a directory
-under RUNS_DIR named ``<dataset>_<timestamp>``. It holds:
+A run is RUNS_DIR/<dataset>_<timestamp>, holding config_snapshot/ (every config/*.py and *.yaml
+as used) and manifest.json (dataset, paths, env overrides, versions, platform, git commit, and
+one entry per stage).
 
-  - ``config_snapshot/``  a copy of every config/*.py and config/*.yaml as used;
-  - ``manifest.json``     dataset, resolved paths, environment overrides, Python
-                          and package versions, platform, git commit (if any),
-                          and one entry per pipeline stage that ran.
-
-Typical use from a runner::
-
-    from config.provenance import new_run_dir, record_stage
-    run = new_run_dir()                       # once per pipeline invocation
-    ...                                       # do the stage's work
+    run = new_run_dir()                       # once per invocation
     record_stage(run, "evaluation", outputs=["rankings.csv"])
 
-Or reuse an existing run directory across stages by passing its path
-(e.g. from the RUN_DIR environment variable that run_all.sh will set).
+run_all.sh passes its run directory to every stage via RUN_DIR.
 """
 
 from __future__ import annotations
@@ -184,6 +174,6 @@ def record_stage(run_dir: Path, stage: str, status: str = "ok",
 
 
 if __name__ == "__main__":
-    # Convenience CLI: `python -m config.provenance` creates a run dir and prints it.
+    # Convenience CLI: python -m config.provenance' creates a run dir and prints it.
     # run_all.sh (Phase 4) will use this to make one run dir shared across stages.
     print(new_run_dir())

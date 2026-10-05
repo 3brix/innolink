@@ -1,4 +1,4 @@
-# Binder benchmarking & design-ranking pipeline
+ Binder benchmarking & design-ranking pipeline
 
 This pipeline takes structure-prediction metrics for antibody / nanobody designs,
 **benchmarks which metrics separate binders from non-binders**, and then uses those
@@ -97,48 +97,55 @@ export DATASET=rf
 
 PYTHONPATH=. python run_data_prep.py     # 1. merge, label, split -> merged/eval/design.csv
 PYTHONPATH=. python run_align.py         # 2. direction-align metrics
-PYTHONPATH=. python run_scale.py         # 3. scale (robust by default)
+PYTHONPATH=. python run_scale.py         # 3. scale (standard by default)
 PYTHONPATH=. python run_qc.py            # 4. integrity / missingness / non-finite reports
-PYTHONPATH=. python run_profiling.py     # 4b. PROFILING: composition, class dist, missingness, ranges
-PYTHONPATH=. python run_evaluation.py    # 5. BENCHMARK: which metrics separate binders
-PYTHONPATH=. python run_thresholds.py    # 6. REPORT-ONLY: data-derived vs literature cutoffs
-PYTHONPATH=. python run_composite.py     # 7. leakage-safe composite metric development
-PYTHONPATH=. python run_filter.py        # 8. filter designs (feasibility: quality + literature developability gates)
-PYTHONPATH=. python run_consensus.py     # 9. RF (primary) + composite -> filter-aware shortlist + disagreement
+PYTHONPATH=. python run_profiling.py     # 5. PROFILING: composition, class dist, missingness, ranges
+PYTHONPATH=. python run_evaluation.py    # 6. BENCHMARK: which metrics separate binders
+PYTHONPATH=. python run_composite.py     # 7. composite metric development (dataset-aware selection)
+PYTHONPATH=. python run_ranking_rf.py    # 8. RF (PRIMARY ranker): grouped-CV metrics + design p_binder
+PYTHONPATH=. python run_filter.py        # 9. filter designs (feasibility: quality + developability gates)
+PYTHONPATH=. python run_consensus.py     # 10. RF (primary) + composite -> filter-aware shortlist + disagreement
+
+# NOT a stage -- report-only, nothing downstream reads it. Run by hand if wanted:
+PYTHONPATH=. python run_thresholds.py    # data-derived vs reference cutoffs
 ```
 
 Or run the whole thing in order with the orchestrator (fail-fast, one shared run
 directory, per-stage logs):
 
 ```bash
-DATASET=rf ./run_all.sh          # add RUN_RF=0 to skip the RF notebook stage
+DATASET=rf ./run_all.sh
 ```
 
-The **Random Forest ranker** (the primary ranking method) lives in
-`notebooks/ranking_rf_final.ipynb`. It is kept as a notebook and run headlessly as a
-pipeline stage:
+The **Random Forest ranker** (the primary ranking method) is `run_ranking_rf.py`, a normal
+stage script like every other:
 
 ```bash
-PYTHONPATH=. jupyter nbconvert --to notebook --execute \
-    notebooks/ranking_rf_final.ipynb \
-    --output ranking_rf_final.executed.ipynb
+PYTHONPATH=. python run_ranking_rf.py
 ```
 
-Note: the RF stage is the top "PIPELINE STAGE" cell of
-`notebooks/ranking_rf_final.ipynb`. Run headlessly, it trains the RF on all
-labelled data and writes `data/processed/evaluation/<dataset>/ranking/rf_design_scores.csv`
-(`sample`, `p_binder`), plus `rf_cv_metrics.csv` and `rf_importances.csv`.
-`run_all.sh` runs it with `--allow-errors` (the notebook's exploratory cells are
-kept but not part of the stage) and then verifies the output exists;
-`run_consensus.py` consumes it. Needs Jupyter and scikit-learn >= 1.4; use
-`RUN_RF=0` to skip the RF stage (then `run_consensus.py` reports the
-composite-only ranking).
+It trains the RF on all labelled data (`eval.csv`) and scores the unlabelled designs, writing
+`data/processed/evaluation/<dataset>/ranking/` — `rf_design_scores.csv` (`sample`, `p_binder`,
+consumed by `run_consensus.py`), `rf_cv_metrics.csv` and `rf_importances.csv`. Needs
+scikit-learn >= 1.4. Two models are kept distinct: the lineage-grouped CV models used only to
+estimate performance, and the final model refit on all labelled rows used only to score designs.
+
+`rf_cv_metrics.csv` reports **pooled out-of-fold** PR-AUC and precision@10% — the same
+estimator as the composite and the single-metric benchmark, so the three are directly
+comparable. Per-fold mean PR-AUC is also reported (`pr_auc_fold_mean`) but it is a different
+quantity and runs optimistic; don't compare it with the others.
+
+The code was extracted verbatim from the "PIPELINE STAGE" cell of
+`notebooks/ranking_rf_final.ipynb`, which is kept unchanged for provenance and exploration but
+is no longer executed by the pipeline (it needed `nbconvert --allow-errors`, which hid real
+failures, plus a kernelspec workaround). Verified equivalent: identical feature importances and
+design ranking order.
 
 Notes on the metric set and reporting:
 
 - **Filtering-only metrics.** Developability and energy metrics (SAP, net charge,
   surface hydrophobicity, unsat H-bonds, interface ΔG, ESM3 ΔG, pyRosetta score) are
-  kept in the data and used by the literature filtering gates (energy mainly for
+  kept in the data and used by the feasibility filtering gates (energy mainly for
   nanobodies), but are **excluded from the eval / RF / composite feature set**
   (`config.analysis.FILTER_ONLY_CATEGORIES`, enforced in `get_metric_columns`).
 - **`mol_type`.** Each sample carries a `nanobody`/`antibody` label (from the dataset
@@ -146,14 +153,15 @@ Notes on the metric set and reporting:
 - **MCC** is reported only in the RF CV metrics (`mcc@0.5`, on out-of-fold predictions).
   It is deliberately not a single-metric benchmark column: at an in-sample F1-optimal
   threshold on a balanced benchmark it adds nothing over PR-AUC / precision@10%.
-- **Thresholds.** `run_thresholds.py` reports the F1-optimal cutoff (reference), a
-  precision-target + N-floor operating point (`PRECISION_TARGET`, `N_MIN`; configurable),
-  and a `threshold_sweep.csv` for choosing those parameters. Threshold selection is
-  in-sample on the benchmark and therefore optimistic.
+- **Thresholds.** `run_thresholds.py` reports the F1-optimal cutoff against each metric's
+  literature reference value (`threshold_report.csv`, plus by-category and by-dataset
+  breakdowns). Threshold selection is in-sample on the benchmark and therefore optimistic.
+  It is report-only: no stage reads its output, and the filter's cutoffs come from
+  `config/thresholds.yaml` instead.
 
 Figures are produced from the notebooks at the repository root
-(`distributions_plots.ipynb`, `evaluation_plots.ipynb`, `profiles_plots.ipynb`,
-`composite_plot.ipynb`). These are optional and run manually.
+(`distributions_plots.ipynb`, `evaluation_plots.ipynb`, `ranking_plots.ipynb`,
+`profiles_plots.ipynb`, `composite_plot.ipynb`). These are optional and run manually.
 
 ---
 
@@ -195,17 +203,20 @@ config/         paths, dataset definitions, metric metadata & thresholds, proven
 preprocessing/  data prep, standardize, align, scale, metadata/labelling, metric_meta
 analysis/
   distributions/  PROFILING: distributions, model agreement, qc.py (integrity),
-                  profiles.py (sample/outlier/threshold views)
+                  profiles.py (sample/outlier/threshold views), plots.py
   evaluation/     BENCHMARKING: single-metric benchmark (canonical rankings.csv),
-                  effect sizes, redundancy, pass_mask/precision_recall_at
-  composite/      BENCHMARKING: leakage-safe composite development
+                  effect sizes, redundancy, pass_mask/precision_recall_at, plots.py
+  composite/      BENCHMARKING: composite development (dataset-aware selection + grouped CV)
   feasibility/    FILTERING: developability gates + responsiveness (library)
-  ranking/        RANKING: RF+composite consensus
-  io.py           load_eval / load_design / load_rankings / rankings_for
-run_*.py        one script per pipeline stage (data_prep, align, scale, qc,
-                evaluation, thresholds, composite, filter, consensus)
-notebooks/      RF ranker (canonical stage cell + exploratory) + leakage experiment
-*_plots.ipynb   figure notebooks (root)
+  ranking/        RANKING: RF+composite consensus, plots.py (RF / composite / consensus figures)
+  plot_common.py  figure helpers shared by evaluation/plots.py and ranking/plots.py
+  figures.py      opt-in figure auto-save (set_figure_dir)
+  io.py           load_processed_datasets / load_eval / load_rankings / rankings_for
+run_*.py        one script per pipeline stage, in run_all.sh order: data_prep, align,
+                scale, qc, profiling, evaluation, composite, ranking_rf, filter, consensus
+                (run_thresholds.py and run_rf_importance.py are report-only, not stages)
+notebooks/      legacy prep notebooks + the reference RF notebook + experiments
+*_plots.ipynb   figure notebooks (root): distributions, evaluation, ranking, profiles, composite
 tests/          pytest suite
 grouped_pyros/  upstream PyRosetta developability scripts (input generation)
 ```
@@ -253,6 +264,6 @@ blended score.
 alignment is `preprocessing/align.py` (via `metric_meta.get_direction`); it is selected
 as a feature by `metric_meta.get_metric_columns` (interface, not filtering-only); scored
 in `run_evaluation.py` → `calculate_all_metrics` → a row in `rankings.csv` (pr_auc,
-precision_at_pct, aligned_roc, opt_threshold_raw); its thresholds are in `thresholds/threshold_report.csv` and
-`threshold_sweep.csv`; its literature gate is `config/thresholds.yaml`; and it appears as
+precision_at_pct, aligned_roc, opt_threshold_raw); its derived-vs-reference cutoff is in
+`thresholds/threshold_report.csv`; its gate is `config/thresholds.yaml`; and it appears as
 an RF feature in `ranking/rf_importances.csv`.

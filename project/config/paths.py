@@ -1,14 +1,8 @@
-"""
-Central path configuration.
+"""Central path configuration. Everything derives from PROJECT_ROOT: the env var if set, else
+the repository root, so a fresh checkout runs with no configuration.
 
-Every location derives from root, resolved in this order:
-  1. the PROJECT_ROOT environment variable, if set;
-  2. otherwise the repository root (the parent of this config/ directory),
-     so the pipeline runs from a fresh checkout with no configuration.
-
-DATA_DIR and RUNS_DIR:by default they sit under PROJECT_ROOT.
-Overrides may also be placed in a .env file at the repository root (KEY=VALUE lines).
-Real environment variables always win over the .env file, which only fills in values that are not already set.
+Overrides may also go in a .env file at the repository root (KEY=VALUE); real environment
+variables win over it.
 """
 
 from pathlib import Path
@@ -60,6 +54,10 @@ QC_DIR = DATA_DIR / "qc"
 PROCESSED_DATA_DIR = DATA_DIR / "processed"
 DISTRIBUTIONS_DIR = PROCESSED_DATA_DIR / "distributions"
 EVALUATION_DIR = PROCESSED_DATA_DIR / "evaluation"
+
+# figures are outputs for the thesis, not tables a stage reads back, so they get their own tree
+# Opt in per notebook with analysis.figures.set_figure_dir(FIGURES_DIR / cfg.name).
+FIGURES_DIR = DATA_DIR / "figures"
 
 METRIC_YAML = PROJECT_ROOT / "config" / "metric_data.yaml"
 THRESHOLDS_YAML = PROJECT_ROOT / "config" / "thresholds.yaml"

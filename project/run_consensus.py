@@ -1,18 +1,22 @@
-"""
-Consensus ranking of designs: Random Forest (primary) + product-composite.
+"""Consensus ranking of designs: Random Forest (primary) + product composite.
 
-Combines the two rankers into one table, a shortlist ordered by RF + disagreement report.
+Filtering never changes the ranking; it only selects from it at the last step. Three artefacts,
+in increasing restriction:
 
-Config:
-  SHORTLIST_K       shortlist size / top-k for agreement flags (default 20)
-  COMPOSITE_SCORE   composite column to use (default: composite_product, else first composite_*)
+  ranking/rf_design_scores.csv    the RF ranking of every design, unfiltered
+  consensus/consensus_scores.csv  the complete ranking + feasibility flags ATTACHED, not applied
+  consensus/shortlist.csv         top-k RF among passes_filter  <- the final prioritisation
 
-Outputs (under EVALUATION_DIR/<dataset>/consensus/):
+'passes_filter' can rest on different gate sets per design set (developability metrics exist only
+where PyRosetta ran); n_gates_seen records how many gates each design was judged on.
+
+Config: SHORTLIST_K (default 25), COMPOSITE_SCORE (default composite_product).
+
+Outputs (EVALUATION_DIR/<dataset>/consensus/):
   consensus_scores.csv   every design with rf/comp rank, percentile, rank_gap + filter flags
-                         (the complete ranking is retained)
-  shortlist.csv          top-k by RF among filter-passing designs; flagged consensus / primary_only
-  disagreements.csv      designs in exactly one method's top-k (over the complete ranking)
-  agreement.txt          Spearman / Kendall rank agreement (+ notes)
+  shortlist.csv          top-k RF among filter-passing designs, flagged consensus / primary_only
+  disagreements.csv      designs in exactly one method's top-k
+  agreement.txt          Spearman / Kendall rank agreement
 """
 
 import os
@@ -27,7 +31,7 @@ from analysis.ranking import build_consensus, shortlist, disagreements, rank_agr
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-SHORTLIST_K = int(os.getenv("SHORTLIST_K", "20"))
+SHORTLIST_K = int(os.getenv("SHORTLIST_K", "25"))
 COMPOSITE_SCORE = os.getenv("COMPOSITE_SCORE", "composite_product")
 
 eval_root = EVALUATION_DIR / cfg.name
@@ -38,8 +42,7 @@ output_dir.mkdir(parents=True, exist_ok=True)
 
 
 def design_rows(df: pd.DataFrame) -> pd.DataFrame:
-    """Rows whose binder label is not 0/1 -> unlabelled designs. If there is no
-    binder column, treat all rows as designs."""
+    """Rows whose binder label is not 0/1; all rows if there is no binder column."""
     if "binder" not in df.columns:
         return df
     is_labelled = pd.to_numeric(df["binder"], errors="coerce").isin([0, 1])
@@ -54,8 +57,9 @@ def pick_composite_col(df: pd.DataFrame) -> str | None:
 
 
 def load_filter_flags() -> pd.DataFrame | None:
-    """Per-design filter pass flags from run_filter (filter/filtered_designs.csv), or None
-    if the filter stage hasn't run. Used to make the shortlist filter-aware."""
+    """Per-design feasibility flags from run_filter, or None if that stage has not run.
+
+    Attached to consensus_scores.csv for information; write_shortlist is what applies them."""
     fp = eval_root / "filter" / "filtered_designs.csv"
     if not fp.exists():
         return None
@@ -64,7 +68,7 @@ def load_filter_flags() -> pd.DataFrame | None:
         return None
     # strings -> boolean
     f["passes_filter"] = f["passes_filter"].astype(str).str.strip().str.lower().eq("true")
-    cols = [c for c in ("sample", "passes_filter", "developability_unknown") if c in f.columns]
+    cols = [c for c in ("sample", "passes_filter", "developability_status", "n_gates_seen") if c in f.columns]
     return f[cols]
 
 
@@ -78,15 +82,21 @@ def attach_filter(ranked: pd.DataFrame, flags: pd.DataFrame | None) -> pd.DataFr
 
 
 def write_shortlist(ranked: pd.DataFrame, flags: pd.DataFrame | None, use_consensus_fn: bool) -> None:
-    """Write the filter-aware shortlist."""
+    """Write the final shortlist: top-k by the primary ranker among filter-passing designs."""
     if flags is not None:
         feasible = ranked[ranked["passes_filter"].eq(True)]
         notes.append(f"shortlist restricted to filter-passing designs "
-                     f"({len(feasible)} of {len(ranked)} feasible).")
+                     f"({len(feasible)} of {len(ranked)} pass).")
+        if "developability_status" in ranked.columns:
+            notes.append(f"feasibility verdicts over all designs: "
+                         f"{ranked['developability_status'].value_counts().to_dict()}")
     else:
         feasible = ranked
+        notes.append("no feasibility report found; shortlist is the unfiltered top-k.")
     sl = shortlist(feasible, SHORTLIST_K) if use_consensus_fn else feasible.head(SHORTLIST_K)
     sl.to_csv(output_dir / "shortlist.csv", index=False)
+    notes.append(f"shortlist = top {len(sl)} of those, ranked by the primary method "
+                 f"(complete unfiltered ranking kept in consensus_scores.csv).")
 
 
 notes = []
@@ -103,7 +113,7 @@ logger.info("composite design scores: %d rows, using column '%s'", len(comp_desi
 
 flags = load_filter_flags()
 if flags is None:
-    notes.append("filter results not found (run run_filter.py first); shortlist is NOT filter-aware.")
+    notes.append("feasibility report not found (run run_filter.py first); shortlist is NOT filter-aware.")
 
 # RF design scores 
 if rf_path.exists():
@@ -132,7 +142,7 @@ if rf_path.exists():
     print(f"[{cfg.name}] consensus -> {output_dir}")
     print("\n".join(lines))
 else:
-    # RF not available yet: still deliver the (filter-aware) composite-only design ranking.
+    # RF not available yet: still deliver the composite-only design ranking.
     notes.append(f"RF design scores absent ({rf_path}); RF notebook not wired to emit them yet.")
     ranked = comp_designs.sort_values(comp_col, ascending=False).reset_index(drop=True)
     ranked["comp_rank"] = range(1, len(ranked) + 1)
